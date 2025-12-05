@@ -57,7 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    _register_services(hass, entry, downlink_topic)
+    _register_services(hass, entry, downlink_topic, manager)
     return True
 
 
@@ -88,7 +88,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-def _register_services(hass: HomeAssistant, entry: ConfigEntry, topic_template: str) -> None:
+def _register_services(
+    hass: HomeAssistant, entry: ConfigEntry, topic_template: str, manager: MilesightManager
+) -> None:
     """Register services for sending downlinks."""
 
     async def _handle_send_command(call):
@@ -111,6 +113,25 @@ def _register_services(hass: HomeAssistant, entry: ConfigEntry, topic_template: 
                 vol.Required("dev_eui"): str,
                 vol.Optional("model", default="wt101"): str,
                 vol.Required("payload"): dict,
+            }
+        ),
+    )
+
+    async def _handle_approve_device(call):
+        dev_eui: str = call.data["dev_eui"]
+        name: str | None = call.data.get("name")
+        model: str | None = call.data.get("model")
+        await manager.async_approve_device(dev_eui, name=name, model=model)
+
+    hass.services.async_register(
+        DOMAIN,
+        "approve_device",
+        _handle_approve_device,
+        schema=vol.Schema(
+            {
+                vol.Required("dev_eui"): str,
+                vol.Optional("model", default="wt101"): str,
+                vol.Optional("name"): str,
             }
         ),
     )

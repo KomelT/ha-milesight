@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Callable, Dict, Optional
 
-from homeassistant.components import mqtt
+from homeassistant.components import mqtt, persistent_notification
 from homeassistant.const import ATTR_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
@@ -41,6 +41,8 @@ class MilesightManager:
         self.entry_id = entry_id
         self.devices: Dict[str, MilesightDevice] = {}
         self._unsubscribers: list[Callable[[], None]] = []
+        self._pending: Dict[str, Dict[str, object]] = {}
+        self._notified: set[str] = set()
 
     async def async_close(self) -> None:
         """Cancel MQTT listeners."""
@@ -62,15 +64,17 @@ class MilesightManager:
         model: Optional[str] = None
         try:
             data = json.loads(payload)
-            dev_eui = str(
-                data.get("dev_eui")
-                or data.get("devEui")
-                or data.get("devEUI")
-                or data.get("deveui")
+            dev_eui = self._normalize_eui(
+                str(
+                    data.get("dev_eui")
+                    or data.get("devEui")
+                    or data.get("devEUI")
+                    or data.get("deveui")
+                )
             )
             model = str(data.get("model") or "").lower() or None
         except json.JSONDecodeError:
-            dev_eui = payload.strip()
+            dev_eui = self._normalize_eui(payload.strip())
 
         topic_dev_eui, topic_model = self._parse_topic(msg.topic)
         if topic_dev_eui and not dev_eui:
@@ -130,11 +134,29 @@ class MilesightManager:
         model_key = (model or "wt101").lower()
         dev = self.devices.get(dev_eui)
         if not dev:
-            dev = MilesightDevice(dev_eui=dev_eui, name=name, model=model_key)
-            self.devices[dev_eui] = dev
-            async_dispatcher_send(
-                self.hass, SIGNAL_NEW_DEVICE.format(entry_id=self.entry_id), dev_eui
+            # Stash pending data and notify the user; require explicit approval.
+            pending = self._pending.setdefault(
+                dev_eui,
+                {"attributes": {}, "telemetry": {}, "model": model_key, "name": name},
             )
+            if name:
+                pending["name"] = name
+            if model:
+                pending["model"] = model_key
+            if attributes:
+                pending["attributes"] = {**pending.get("attributes", {}), **attributes}
+            if telemetry:
+                pending["telemetry"] = {**pending.get("telemetry", {}), **telemetry}
+            if dev_eui not in self._notified:
+                self._notified.add(dev_eui)
+                persistent_notification.async_create(
+                    self.hass,
+                    f"New Milesight device discovered: {dev_eui}\n"
+                    f"Model: {pending.get('model') or 'unknown'}\n"
+                    "Approve via the service `milesight.approve_device`.",
+                    title="Milesight device discovered",
+                )
+            return
 
         dev.last_seen = datetime.now(timezone.utc)
         if name:
@@ -179,12 +201,14 @@ class MilesightManager:
             data = None
 
         if isinstance(data, dict):
-            dev_eui = str(
-                data.get("dev_eui")
-                or data.get("devEui")
-                or data.get("devEUI")
-                or data.get("deveui")
-                or data.get("DevEUI_uplink", {}).get("DevEUI")
+            dev_eui = self._normalize_eui(
+                str(
+                    data.get("dev_eui")
+                    or data.get("devEui")
+                    or data.get("devEUI")
+                    or data.get("deveui")
+                    or data.get("DevEUI_uplink", {}).get("DevEUI")
+                )
             )
             if not dev_eui:
                 dev_eui = topic_dev_eui
@@ -254,12 +278,7 @@ class MilesightManager:
         if len(parts) < 4 or parts[0] != "milesight":
             return None, None
         model = parts[1].lower() if parts[1] else None
-        dev_eui_raw = parts[2]
-        dev_eui = (
-            dev_eui_raw.replace(":", "").replace("-", "").lower()
-            if dev_eui_raw
-            else None
-        )
+        dev_eui = self._normalize_eui(parts[2]) if len(parts) >= 3 else None
         return dev_eui, model
 
     def _extract_bytes(self, data: Dict[str, object]) -> Optional[bytes]:
@@ -284,6 +303,51 @@ class MilesightManager:
             return bytes(data["bytes"])
 
         return None
+
+    def _normalize_eui(self, value: Optional[str]) -> Optional[str]:
+        """Normalize DevEUI strings to lowercase hex without separators."""
+        if not value:
+            return None
+        cleaned = value.replace(":", "").replace("-", "").strip().lower()
+        return cleaned or None
+
+    async def async_approve_device(
+        self, dev_eui: str, name: Optional[str] = None, model: Optional[str] = None
+    ) -> None:
+        """Approve a pending device and create entities."""
+        dev_eui = self._normalize_eui(dev_eui) or ""
+        if not dev_eui:
+            return
+        pending = self._pending.pop(dev_eui, {})
+        model_key = (model or pending.get("model") or "wt101").lower()
+        name = name or pending.get("name")
+        attributes = pending.get("attributes") or {}
+        telemetry = pending.get("telemetry") or {}
+
+        dev = self.devices.get(dev_eui)
+        if not dev:
+            dev = MilesightDevice(dev_eui=dev_eui, name=name, model=model_key)
+            self.devices[dev_eui] = dev
+            async_dispatcher_send(
+                self.hass, SIGNAL_NEW_DEVICE.format(entry_id=self.entry_id), dev_eui
+            )
+
+        dev.last_seen = datetime.now(timezone.utc)
+        if name:
+            dev.name = name
+        if model_key:
+            dev.model = model_key
+        if attributes:
+            dev.attributes.update(attributes)
+        if telemetry:
+            dev.telemetry.update(telemetry)
+
+        await self._async_sync_device_registry(dev)
+        async_dispatcher_send(
+            self.hass,
+            SIGNAL_DEVICE_UPDATED.format(entry_id=self.entry_id, dev_eui=dev_eui),
+            dev_eui,
+        )
 
     def serialize_devices(self) -> list[dict]:
         """Return a list of devices for the frontend view."""
