@@ -4,6 +4,7 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntityDescription,
 )
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntityDescription
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 
 WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
@@ -53,5 +54,28 @@ WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="motor_position",
         name="Motor Position",
+    ),
+)
+
+WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
+    BinarySensorEntityDescription(
+        key="window_detection",
+        name="Open Window",
+        device_class=BinarySensorDeviceClass.WINDOW,
+    ),
+    BinarySensorEntityDescription(
+        key="tamper_status",
+        name="Uninstalled",
+        device_class=BinarySensorDeviceClass.TAMPER,
+    ),
+    BinarySensorEntityDescription(
+        key="freeze_protection",
+        name="Freeze Protection",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+    ),
+    BinarySensorEntityDescription(
+        key="motor_calibration_result",
+        name="Motor Calibration Issue",
+        device_class=BinarySensorDeviceClass.PROBLEM,
     ),
 )
