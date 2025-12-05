@@ -60,12 +60,12 @@ WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
 WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
     BinarySensorEntityDescription(
         key="window_detection",
-        name="Open Window",
+        name="Window",
         device_class=BinarySensorDeviceClass.WINDOW,
     ),
     BinarySensorEntityDescription(
         key="tamper_status",
-        name="Uninstalled",
+        name="Tampering",
         device_class=BinarySensorDeviceClass.TAMPER,
     ),
     BinarySensorEntityDescription(
@@ -75,7 +75,7 @@ WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
     ),
     BinarySensorEntityDescription(
         key="motor_calibration_result",
-        name="Motor Calibration Issue",
+        name="Motor Calibration",
         device_class=BinarySensorDeviceClass.PROBLEM,
     ),
 )
