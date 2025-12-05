@@ -65,19 +65,48 @@
   <h1>Milesight Devices</h1>
   <p>Discovered devices from MQTT uplinks.</p>
   <div id="empty" hidden>No devices have reported yet.</div>
+  <div id="pending" hidden></div>
   <div id="grid"></div>
   <script>
     const grid = document.getElementById("grid");
     const empty = document.getElementById("empty");
+    const pending = document.getElementById("pending");
 
-    function render(devices) {
+    function render(devices, pendingDevices) {
       grid.innerHTML = "";
+      pending.innerHTML = "";
+
+      if (pendingDevices.length) {
+        pending.hidden = false;
+        const title = document.createElement("div");
+        title.textContent = `Pending devices (${pendingDevices.length})`;
+        title.style.marginBottom = "8px";
+        pending.appendChild(title);
+        pendingDevices.forEach(dev => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `<div class="header"><div><strong>${dev.name}</strong><div class="meta">${dev.dev_eui}</div></div><span class="chip">${dev.model}</span></div>`;
+          const btnAdd = document.createElement("button");
+          btnAdd.textContent = "Add device";
+          btnAdd.style.marginRight = "8px";
+          btnAdd.onclick = () => act(dev.dev_eui, "approve", dev.model, dev.name);
+          const btnIgnore = document.createElement("button");
+          btnIgnore.textContent = "Ignore";
+          btnIgnore.onclick = () => act(dev.dev_eui, "ignore", dev.model, dev.name);
+          card.appendChild(btnAdd);
+          card.appendChild(btnIgnore);
+          pending.appendChild(card);
+        });
+      } else {
+        pending.hidden = true;
+      }
+
       if (!devices.length) {
         empty.hidden = false;
         return;
       }
       empty.hidden = true;
-      devices.forEach(dev => {
+        devices.forEach(dev => {
         const card = document.createElement("div");
         card.className = "card";
 
@@ -101,6 +130,11 @@
           dl.appendChild(dd);
         });
         card.appendChild(dl);
+        const btnDelete = document.createElement("button");
+        btnDelete.textContent = "Delete";
+        btnDelete.style.marginTop = "8px";
+        btnDelete.onclick = () => act(dev.dev_eui, "delete", dev.model, dev.name);
+        card.appendChild(btnDelete);
         grid.appendChild(card);
       });
     }
@@ -110,7 +144,7 @@
         const res = await fetch("/api/milesight/devices");
         if (!res.ok) throw new Error(res.statusText);
         const data = await res.json();
-        render(data.devices || []);
+        render(data.devices || [], data.pending || []);
       } catch (err) {
         console.error("Failed to load devices", err);
       } finally {
@@ -118,6 +152,15 @@
       }
     }
     refresh();
+
+    async function act(dev_eui, action, model, name) {
+      await fetch("/api/milesight/device_action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dev_eui, action, model, name })
+      });
+      refresh();
+    }
   </script>
 </body>
 </html>

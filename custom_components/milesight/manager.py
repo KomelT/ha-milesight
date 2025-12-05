@@ -364,3 +364,39 @@ class MilesightManager:
                 }
             )
         return devices
+
+    def serialize_pending(self) -> list[dict]:
+        """Return pending devices waiting for approval."""
+        items = []
+        for dev_eui, data in self._pending.items():
+            items.append(
+                {
+                    "dev_eui": dev_eui,
+                    "name": data.get("name") or dev_eui,
+                    "model": data.get("model") or "unknown",
+                    "attributes": data.get("attributes") or {},
+                    "telemetry": data.get("telemetry") or {},
+                }
+            )
+        return items
+
+    async def async_ignore_device(self, dev_eui: str) -> None:
+        """Ignore a pending device."""
+        dev_eui = self._normalize_eui(dev_eui) or ""
+        if not dev_eui:
+            return
+        self._pending.pop(dev_eui, None)
+        self._notified.discard(dev_eui)
+
+    async def async_delete_device(self, dev_eui: str) -> None:
+        """Delete an approved device and remove from registry."""
+        dev_eui = self._normalize_eui(dev_eui) or ""
+        if not dev_eui:
+            return
+        self.devices.pop(dev_eui, None)
+        self._pending.pop(dev_eui, None)
+        self._notified.discard(dev_eui)
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device({(DOMAIN, dev_eui)})
+        if device:
+            registry.async_remove_device(device.id)

@@ -21,7 +21,7 @@ from .const import (
     PLATFORMS,
 )
 from .encoder import encode_payload, EncodeError
-from .http_view import MilesightDevicesView
+from .http_view import MilesightDevicesView, MilesightDeviceActionView
 from .manager import MilesightManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -68,6 +68,7 @@ async def _async_setup_http(hass: HomeAssistant, manager: MilesightManager) -> N
         [StaticPathConfig(url_path="/milesight-frontend", path=www_path, cache_headers=False)]
     )
     hass.http.register_view(MilesightDevicesView(manager))
+    hass.http.register_view(MilesightDeviceActionView(manager))
     frontend.async_register_built_in_panel(
         hass,
         component_name="iframe",
@@ -134,6 +135,17 @@ def _register_services(
                 vol.Optional("name"): str,
             }
         ),
+    )
+
+    async def _handle_delete_device(call):
+        dev_eui: str = call.data["dev_eui"]
+        await manager.async_delete_device(dev_eui)
+
+    hass.services.async_register(
+        DOMAIN,
+        "delete_device",
+        _handle_delete_device,
+        schema=vol.Schema({vol.Required("dev_eui"): str}),
     )
 
 
