@@ -1,14 +1,9 @@
-"""Sensor entities for Milesight WT101."""
+"""Sensor entities for Milesight devices."""
 
 from __future__ import annotations
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorEntityDescription,
-)
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -16,57 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, SIGNAL_DEVICE_UPDATED, SIGNAL_NEW_DEVICE
 from .manager import MilesightManager, MilesightDevice
-
-
-SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
-    SensorEntityDescription(
-        key="battery",
-        name="Battery",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-    ),
-    SensorEntityDescription(
-        key="temperature",
-        name="Ambient Temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-    ),
-    SensorEntityDescription(
-        key="target_temperature",
-        name="Target Temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-    ),
-    SensorEntityDescription(
-        key="valve_opening",
-        name="Valve Opening",
-        native_unit_of_measurement=PERCENTAGE,
-    ),
-    SensorEntityDescription(
-        key="tamper_status",
-        name="Installation Status",
-    ),
-    SensorEntityDescription(
-        key="window_detection",
-        name="Open Window Detection",
-    ),
-    SensorEntityDescription(
-        key="motor_calibration_result",
-        name="Motor Calibration Result",
-    ),
-    SensorEntityDescription(
-        key="motor_stroke",
-        name="Motor Stroke",
-    ),
-    SensorEntityDescription(
-        key="freeze_protection",
-        name="Freeze Protection",
-    ),
-    SensorEntityDescription(
-        key="motor_position",
-        name="Motor Position",
-    ),
-)
+from .models import MODEL_SENSORS
 
 
 async def async_setup_entry(
@@ -79,8 +24,11 @@ async def async_setup_entry(
         device = manager.get_device(dev_eui)
         if not device:
             return
+        descriptions = MODEL_SENSORS.get(device.model.lower())
+        if not descriptions:
+            return
         new_entities: list[MilesightSensor] = []
-        for description in SENSOR_DESCRIPTIONS:
+        for description in descriptions:
             new_entities.append(
                 MilesightSensor(manager, device, description, entry.entry_id)
             )
@@ -90,7 +38,6 @@ async def async_setup_entry(
     for dev_eui in list(manager.devices.keys()):
         _async_add_device(dev_eui)
 
-    # Listen for new devices
     entry.async_on_unload(
         async_dispatcher_connect(
             hass, SIGNAL_NEW_DEVICE.format(entry_id=entry.entry_id), _async_add_device
@@ -99,7 +46,7 @@ async def async_setup_entry(
 
 
 class MilesightSensor(SensorEntity):
-    """Represents a single WT101 data point."""
+    """Represents a single Milesight datapoint."""
 
     _attr_should_poll = False
     _attr_entity_registry_enabled_default = True
@@ -142,6 +89,7 @@ class MilesightSensor(SensorEntity):
             return
         self._attr_native_value = device.telemetry.get(self.entity_description.key)
         self._attr_extra_state_attributes = {
-            "last_seen": device.last_seen.isoformat()
+            "last_seen": device.last_seen.isoformat(),
+            "model": device.model,
         }
         self.async_write_ha_state()

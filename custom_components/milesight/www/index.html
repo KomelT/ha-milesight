@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Milesight WT101</title>
+  <title>Milesight Devices</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -62,7 +62,7 @@
   </style>
 </head>
 <body>
-  <h1>Milesight WT101</h1>
+  <h1>Milesight Devices</h1>
   <p>Discovered devices from MQTT uplinks.</p>
   <div id="empty" hidden>No devices have reported yet.</div>
   <div id="grid"></div>
@@ -107,7 +107,7 @@
 
     async function refresh() {
       try {
-        const res = await fetch("/api/milesight_wt101/devices");
+        const res = await fetch("/api/milesight/devices");
         if (!res.ok) throw new Error(res.statusText);
         const data = await res.json();
         render(data.devices || []);

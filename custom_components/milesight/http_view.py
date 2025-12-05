@@ -1,4 +1,4 @@
-"""HTTP API for WT101 devices."""
+"""HTTP API for Milesight devices."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from .manager import MilesightManager
 class MilesightDevicesView(HomeAssistantView):
     """Expose devices and last telemetry for the frontend."""
 
-    name = "api:milesight_wt101:devices"
-    url = "/api/milesight_wt101/devices"
+    name = "api:milesight:devices"
+    url = "/api/milesight/devices"
     requires_auth = True
 
     def __init__(self, manager: MilesightManager) -> None:

@@ -1,11 +1,12 @@
-"""Constants for the Milesight WT101 MQTT integration."""
+"""Constants for the Milesight MQTT integration."""
 
-DOMAIN = "milesight_wt101"
+DOMAIN = "milesight"
 
 CONF_JOIN_TOPIC = "join_topic"
 CONF_UPLINK_TOPIC = "uplink_topic"
 CONF_DOWNLINK_TOPIC = "downlink_topic"
 
+# Topic pattern: milesight/{model}/{dev_eui}/{action}
 DEFAULT_JOIN_TOPIC = "milesight/+/+/join"
 DEFAULT_UPLINK_TOPIC = "milesight/+/+/uplink"
 DEFAULT_DOWNLINK_TOPIC = "milesight/+/+/downlink"

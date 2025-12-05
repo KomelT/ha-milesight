@@ -16,7 +16,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN, SIGNAL_DEVICE_UPDATED, SIGNAL_NEW_DEVICE
-from .decoder import DecodeError, decode_wt101
+from .decoder import DecodeError, decode_payload
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class MilesightDevice:
     """Simple in-memory model for a device."""
 
     dev_eui: str
-    model: str = "wt101"
+    model: str
     name: Optional[str] = None
     last_seen: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     telemetry: Dict[str, object] = field(default_factory=dict)
@@ -82,6 +82,9 @@ class MilesightManager:
             _LOGGER.warning("Join payload missing dev_eui: %s", payload)
             return
 
+        if not model:
+            model = "wt101"  # default to earliest supported
+
         name = data.get(ATTR_NAME) if isinstance(data, dict) else None
         await self._async_add_or_update_device(
             dev_eui, name=name, model=model, attributes=data
@@ -96,16 +99,17 @@ class MilesightManager:
 
         dev_eui = parsed["dev_eui"]
         raw = parsed["bytes"]
+        model = parsed.get("model") or "wt101"
 
         try:
-            decoded = decode_wt101(raw)
+            decoded = decode_payload(model, raw)
         except DecodeError as err:
-            _LOGGER.warning("Failed to decode uplink for %s: %s", dev_eui, err)
+            _LOGGER.warning("Failed to decode uplink for %s (%s): %s", dev_eui, model, err)
             return
 
         await self._async_add_or_update_device(
             dev_eui,
-            model=parsed.get("model"),
+            model=model,
             attributes=parsed.get("meta", {}),
             telemetry=decoded,
         )
@@ -120,9 +124,10 @@ class MilesightManager:
     ) -> None:
         """Create a new device entry or update an existing one."""
         dev_eui = dev_eui.lower()
+        model_key = (model or "wt101").lower()
         dev = self.devices.get(dev_eui)
         if not dev:
-            dev = MilesightDevice(dev_eui=dev_eui, name=name)
+            dev = MilesightDevice(dev_eui=dev_eui, name=name, model=model_key)
             self.devices[dev_eui] = dev
             async_dispatcher_send(
                 self.hass, SIGNAL_NEW_DEVICE.format(entry_id=self.entry_id), dev_eui
@@ -132,7 +137,7 @@ class MilesightManager:
         if name:
             dev.name = name
         if model:
-            dev.model = model
+            dev.model = model_key
         if attributes:
             dev.attributes.update(attributes)
         if telemetry:
