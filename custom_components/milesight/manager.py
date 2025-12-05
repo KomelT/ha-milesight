@@ -98,14 +98,17 @@ class MilesightManager:
             return
 
         dev_eui = parsed["dev_eui"]
-        raw = parsed["bytes"]
-        model = parsed.get("model") or "wt101"
+        raw = parsed.get("bytes")
+        model = parsed.get("model")
 
-        try:
-            decoded = decode_payload(model, raw)
-        except DecodeError as err:
-            _LOGGER.warning("Failed to decode uplink for %s (%s): %s", dev_eui, model, err)
-            return
+        if parsed.get("telemetry") is not None:
+            decoded = parsed["telemetry"]
+        else:
+            try:
+                decoded = decode_payload(model, raw)
+            except DecodeError as err:
+                _LOGGER.warning("Failed to decode uplink for %s (%s): %s", dev_eui, model, err)
+                return
 
         await self._async_add_or_update_device(
             dev_eui,
@@ -188,11 +191,27 @@ class MilesightManager:
             if not dev_eui:
                 return None
 
+            model = str(data.get("model") or "").lower() or topic_model
             raw_bytes = self._extract_bytes(data)
             if raw_bytes is None:
-                return None
+                meta = {
+                    key: data[key]
+                    for key in ("f_port", "fcnt", "rssi", "snr", "timestamp")
+                    if key in data
+                }
+                telemetry = {
+                    k: v
+                    for k, v in data.items()
+                    if k not in ("dev_eui", "devEui", "devEUI", "deveui", "DevEUI_uplink", "model")
+                }
+                return {
+                    "dev_eui": dev_eui,
+                    "bytes": None,
+                    "meta": meta,
+                    "model": model,
+                    "telemetry": telemetry,
+                }
 
-            model = str(data.get("model") or "").lower() or topic_model
             meta = {
                 key: data[key]
                 for key in ("f_port", "fcnt", "rssi", "snr", "timestamp")
