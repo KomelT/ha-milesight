@@ -77,8 +77,8 @@ class MilesightManager:
             dev_eui = self._normalize_eui(payload.strip())
 
         topic_dev_eui, topic_model = self._parse_topic(msg.topic)
-        if topic_dev_eui and not dev_eui:
-            dev_eui = topic_dev_eui
+        if topic_dev_eui:
+            dev_eui = topic_dev_eui  # always trust topic for identity
         if topic_model:
             model = topic_model
 
@@ -216,8 +216,8 @@ class MilesightManager:
                     or data.get("DevEUI_uplink", {}).get("DevEUI")
                 )
             )
-            if not dev_eui:
-                dev_eui = topic_dev_eui
+            if topic_dev_eui:
+                dev_eui = topic_dev_eui  # prefer topic identity
             if not dev_eui:
                 return None
 
