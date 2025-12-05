@@ -17,8 +17,7 @@ except Exception:  # pragma: no cover
     js2py = None
     _JS_AVAILABLE = False
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-SENSOR_DECODERS_ROOT = REPO_ROOT / "SensorDecoders"
+SENSOR_DECODERS_ROOT = Path(__file__).parent / "SensorDecoders"
 _JS_CACHE: Dict[str, object] = {}
 _DECODER_PATH_CACHE: Dict[str, Optional[Path]] = {}
 
