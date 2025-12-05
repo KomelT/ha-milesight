@@ -102,6 +102,9 @@ class MilesightManager:
             return
 
         dev_eui = parsed["dev_eui"]
+        if not dev_eui:
+            _LOGGER.warning("Ignoring uplink without dev_eui: %s", msg.payload)
+            return
         raw = parsed.get("bytes")
         model = parsed.get("model")
 
@@ -130,7 +133,10 @@ class MilesightManager:
         telemetry: Optional[Dict[str, object]] = None,
     ) -> None:
         """Create a new device entry or update an existing one."""
-        dev_eui = dev_eui.lower()
+        dev_eui = (dev_eui or "").lower().strip()
+        if not dev_eui:
+            _LOGGER.warning("Skipping device update with missing dev_eui")
+            return
         model_key = (model or "wt101").lower()
         dev = self.devices.get(dev_eui)
         if not dev:
