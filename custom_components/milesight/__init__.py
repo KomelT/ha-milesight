@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from homeassistant.components import frontend, mqtt
-from homeassistant.components.http import StaticPathConfig
+from homeassistant.components import mqtt
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 import voluptuous as vol
@@ -38,7 +37,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager = MilesightManager(hass, entry.entry_id)
     hass.data[DOMAIN][entry.entry_id] = manager
 
-    await _async_setup_http(hass, manager)
+    # No frontend panel; only API endpoints
+    hass.http.register_view(MilesightDevicesView(manager))
+    hass.http.register_view(MilesightDeviceActionView(manager))
 
     # Register MQTT listeners
     join_topic = entry.data[CONF_JOIN_TOPIC]
@@ -63,21 +64,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_setup_http(hass: HomeAssistant, manager: MilesightManager) -> None:
     """Expose frontend assets and API endpoint."""
-    www_path = Path(__file__).parent / "www"
-    hass.http.async_register_static_paths(
-        [StaticPathConfig(url_path="/milesight-frontend", path=www_path, cache_headers=False)]
-    )
     hass.http.register_view(MilesightDevicesView(manager))
     hass.http.register_view(MilesightDeviceActionView(manager))
-    frontend.async_register_built_in_panel(
-        hass,
-        component_name="iframe",
-        sidebar_title="Milesight",
-        sidebar_icon="mdi:radiator",
-        frontend_url_path="milesight",
-        config={"url": "/milesight-frontend/index.html"},
-        require_admin=False,
-    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -114,25 +102,6 @@ def _register_services(
                 vol.Required("dev_eui"): str,
                 vol.Optional("model", default="wt101"): str,
                 vol.Required("payload"): dict,
-            }
-        ),
-    )
-
-    async def _handle_approve_device(call):
-        dev_eui: str = call.data["dev_eui"]
-        name: str | None = call.data.get("name")
-        model: str | None = call.data.get("model")
-        await manager.async_approve_device(dev_eui, name=name, model=model)
-
-    hass.services.async_register(
-        DOMAIN,
-        "approve_device",
-        _handle_approve_device,
-        schema=vol.Schema(
-            {
-                vol.Required("dev_eui"): str,
-                vol.Optional("model", default="wt101"): str,
-                vol.Optional("name"): str,
             }
         ),
     )

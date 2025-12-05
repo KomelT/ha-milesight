@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Callable, Dict, Optional
 
-from homeassistant.components import mqtt, persistent_notification
+from homeassistant.components import mqtt
 from homeassistant.const import ATTR_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
@@ -41,8 +41,6 @@ class MilesightManager:
         self.entry_id = entry_id
         self.devices: Dict[str, MilesightDevice] = {}
         self._unsubscribers: list[Callable[[], None]] = []
-        self._pending: Dict[str, Dict[str, object]] = {}
-        self._notified: set[str] = set()
 
     async def async_close(self) -> None:
         """Cancel MQTT listeners."""
@@ -72,7 +70,7 @@ class MilesightManager:
                     or data.get("deveui")
                 )
             )
-            model = str(data.get("model") or "").lower() or None
+            model = (str(data.get("model") or "") or None)
         except json.JSONDecodeError:
             dev_eui = self._normalize_eui(payload.strip())
 
@@ -137,35 +135,14 @@ class MilesightManager:
         if not dev_eui:
             _LOGGER.warning("Skipping device update with missing dev_eui")
             return
-        model_key = (model or "wt101").lower()
+        model_key = (model or "WT101").upper()
         dev = self.devices.get(dev_eui)
         if not dev:
-            # Stash pending data and notify the user; require explicit approval.
-            pending = self._pending.setdefault(
-                dev_eui,
-                {"attributes": {}, "telemetry": {}, "model": model_key, "name": name},
+            dev = MilesightDevice(dev_eui=dev_eui, name=name, model=model_key)
+            self.devices[dev_eui] = dev
+            async_dispatcher_send(
+                self.hass, SIGNAL_NEW_DEVICE.format(entry_id=self.entry_id), dev_eui
             )
-            if name:
-                pending["name"] = name
-            if model:
-                pending["model"] = model_key
-            if attributes:
-                pending["attributes"] = {**pending.get("attributes", {}), **attributes}
-            if telemetry:
-                pending["telemetry"] = {**pending.get("telemetry", {}), **telemetry}
-            if dev_eui not in self._notified:
-                self._notified.add(dev_eui)
-                persistent_notification.async_create(
-                    self.hass,
-                    (
-                        f"New Milesight device discovered: `{dev_eui}`\n"
-                        f"Model: `{pending.get('model') or 'unknown'}`\n\n"
-                        "[Open Milesight panel](/milesight-frontend/index.html) to approve/ignore, "
-                        "or call service `milesight.approve_device`."
-                    ),
-                    title="Milesight device discovered",
-                )
-            return
 
         dev.last_seen = datetime.now(timezone.utc)
         if name:
@@ -224,7 +201,7 @@ class MilesightManager:
             if not dev_eui:
                 return None
 
-            model = str(data.get("model") or "").lower() or topic_model
+        model = (str(data.get("model") or "").upper() or topic_model)
             raw_bytes = self._extract_bytes(data)
             if raw_bytes is None:
                 meta = {
@@ -276,7 +253,7 @@ class MilesightManager:
             "dev_eui": topic_dev_eui,
             "bytes": raw_bytes,
             "meta": {},
-            "model": topic_model,
+            "model": topic_model.upper() if topic_model else None,
         }
 
     def _parse_topic(self, topic: str | None) -> tuple[Optional[str], Optional[str]]:
@@ -286,7 +263,7 @@ class MilesightManager:
         parts = topic.split("/")
         if len(parts) < 4 or parts[0] != "milesight":
             return None, None
-        model = parts[1].lower() if parts[1] else None
+        model = parts[1].upper() if parts[1] else None
         dev_eui = self._normalize_eui(parts[2]) if len(parts) >= 3 else None
         return dev_eui, model
 
@@ -320,44 +297,6 @@ class MilesightManager:
         cleaned = value.replace(":", "").replace("-", "").strip().lower()
         return cleaned or None
 
-    async def async_approve_device(
-        self, dev_eui: str, name: Optional[str] = None, model: Optional[str] = None
-    ) -> None:
-        """Approve a pending device and create entities."""
-        dev_eui = self._normalize_eui(dev_eui) or ""
-        if not dev_eui:
-            return
-        pending = self._pending.pop(dev_eui, {})
-        model_key = (model or pending.get("model") or "wt101").lower()
-        name = name or pending.get("name")
-        attributes = pending.get("attributes") or {}
-        telemetry = pending.get("telemetry") or {}
-
-        dev = self.devices.get(dev_eui)
-        if not dev:
-            dev = MilesightDevice(dev_eui=dev_eui, name=name, model=model_key)
-            self.devices[dev_eui] = dev
-            async_dispatcher_send(
-                self.hass, SIGNAL_NEW_DEVICE.format(entry_id=self.entry_id), dev_eui
-            )
-
-        dev.last_seen = datetime.now(timezone.utc)
-        if name:
-            dev.name = name
-        if model_key:
-            dev.model = model_key
-        if attributes:
-            dev.attributes.update(attributes)
-        if telemetry:
-            dev.telemetry.update(telemetry)
-
-        await self._async_sync_device_registry(dev)
-        async_dispatcher_send(
-            self.hass,
-            SIGNAL_DEVICE_UPDATED.format(entry_id=self.entry_id, dev_eui=dev_eui),
-            dev_eui,
-        )
-
     def serialize_devices(self) -> list[dict]:
         """Return a list of devices for the frontend view."""
         devices = []
@@ -374,37 +313,12 @@ class MilesightManager:
             )
         return devices
 
-    def serialize_pending(self) -> list[dict]:
-        """Return pending devices waiting for approval."""
-        items = []
-        for dev_eui, data in self._pending.items():
-            items.append(
-                {
-                    "dev_eui": dev_eui,
-                    "name": data.get("name") or dev_eui,
-                    "model": data.get("model") or "unknown",
-                    "attributes": data.get("attributes") or {},
-                    "telemetry": data.get("telemetry") or {},
-                }
-            )
-        return items
-
-    async def async_ignore_device(self, dev_eui: str) -> None:
-        """Ignore a pending device."""
-        dev_eui = self._normalize_eui(dev_eui) or ""
-        if not dev_eui:
-            return
-        self._pending.pop(dev_eui, None)
-        self._notified.discard(dev_eui)
-
     async def async_delete_device(self, dev_eui: str) -> None:
         """Delete an approved device and remove from registry."""
         dev_eui = self._normalize_eui(dev_eui) or ""
         if not dev_eui:
             return
         self.devices.pop(dev_eui, None)
-        self._pending.pop(dev_eui, None)
-        self._notified.discard(dev_eui)
         registry = dr.async_get(self.hass)
         device = registry.async_get_device({(DOMAIN, dev_eui)})
         if device:

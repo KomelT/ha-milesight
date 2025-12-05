@@ -22,16 +22,11 @@ class MilesightDevicesView(HomeAssistantView):
 
     @callback
     async def get(self, request) -> Any:  # type: ignore[override]
-        return self.json(
-            {
-                "devices": self._manager.serialize_devices(),
-                "pending": self._manager.serialize_pending(),
-            }
-        )
+        return self.json({"devices": self._manager.serialize_devices()})
 
 
 class MilesightDeviceActionView(HomeAssistantView):
-    """Handle approve/ignore actions for pending devices."""
+    """Handle device actions (delete)."""
 
     name = "api:milesight:device_action"
     url = "/api/milesight/device_action"
@@ -47,12 +42,6 @@ class MilesightDeviceActionView(HomeAssistantView):
         model = data.get("model")
         name = data.get("name")
 
-        if action == "approve":
-            await self._manager.async_approve_device(dev_eui, name=name, model=model)
-            return self.json({"status": "approved"})
-        if action == "ignore":
-            await self._manager.async_ignore_device(dev_eui)
-            return self.json({"status": "ignored"})
         if action == "delete":
             await self._manager.async_delete_device(dev_eui)
             return self.json({"status": "deleted"})

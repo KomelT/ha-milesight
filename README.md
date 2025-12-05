@@ -6,7 +6,7 @@ Custom integration that listens to MQTT join/uplink topics, auto-discovers Miles
 - Configurable MQTT topics for join/uplink/downlink (via config flow)
 - Uplink payload decoding using official Milesight JS decoders (via `js2py`)
 - Dynamic device/entity creation based on the model (WT101 included)
-- Built-in panel (`Settings → Devices & Services → Integrations → Milesight → Open Web UI`) served from the integration
+- No built-in panel; use HA entities/services directly
 
 ## Expected MQTT payloads
 - Topic pattern: `milesight/{model}/{dev_eui}/uplink` (defaults to wildcards `milesight/+/+/uplink`, same for join/downlink).
