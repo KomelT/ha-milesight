@@ -70,7 +70,7 @@ class MilesightManager:
                     or data.get("deveui")
                 )
             )
-            model = (str(data.get("model") or "") or None)
+            model = (str(data.get("model") or "").upper() or None)
         except json.JSONDecodeError:
             dev_eui = self._normalize_eui(payload.strip())
 
@@ -85,7 +85,7 @@ class MilesightManager:
             return
 
         if not model:
-            model = "wt101"  # default to earliest supported
+            model = "WT101"  # default to earliest supported
 
         name = data.get(ATTR_NAME) if isinstance(data, dict) else None
         await self._async_add_or_update_device(
@@ -104,7 +104,7 @@ class MilesightManager:
             _LOGGER.warning("Ignoring uplink without dev_eui: %s", msg.payload)
             return
         raw = parsed.get("bytes")
-        model = parsed.get("model")
+        model = parsed.get("model") or "WT101"
 
         if parsed.get("telemetry") is not None:
             decoded = parsed["telemetry"]
@@ -201,7 +201,7 @@ class MilesightManager:
             if not dev_eui:
                 return None
 
-        model = (str(data.get("model") or "").upper() or topic_model)
+            model = (str(data.get("model") or "").upper() or topic_model or "WT101")
             raw_bytes = self._extract_bytes(data)
             if raw_bytes is None:
                 meta = {
@@ -212,7 +212,15 @@ class MilesightManager:
                 telemetry = {
                     k: v
                     for k, v in data.items()
-                    if k not in ("dev_eui", "devEui", "devEUI", "deveui", "DevEUI_uplink", "model")
+                    if k
+                    not in (
+                        "dev_eui",
+                        "devEui",
+                        "devEUI",
+                        "deveui",
+                        "DevEUI_uplink",
+                        "model",
+                    )
                 }
                 return {
                     "dev_eui": dev_eui,
