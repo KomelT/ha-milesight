@@ -1,7 +1,6 @@
 {
   "name": "Milesight MQTT",
   "content_in_root": false,
-  "domains": ["milesight"],
   "zip_release": false,
   "filename": "milesight.zip",
   "homeassistant": "2023.11.0"
