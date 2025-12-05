@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 
 from homeassistant.components import frontend, mqtt
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 import voluptuous as vol
@@ -63,7 +64,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_setup_http(hass: HomeAssistant, manager: MilesightManager) -> None:
     """Expose frontend assets and API endpoint."""
     www_path = Path(__file__).parent / "www"
-    hass.http.register_static_path("/milesight-frontend", str(www_path), cache_headers=False)
+    hass.http.async_register_static_paths(
+        [StaticPathConfig(url_path="/milesight-frontend", path=www_path, cache_headers=False)]
+    )
     hass.http.register_view(MilesightDevicesView(manager))
     frontend.async_register_built_in_panel(
         hass,
