@@ -157,9 +157,12 @@ class MilesightManager:
                 self._notified.add(dev_eui)
                 persistent_notification.async_create(
                     self.hass,
-                    f"New Milesight device discovered: {dev_eui}\n"
-                    f"Model: {pending.get('model') or 'unknown'}\n"
-                    "Approve via the service `milesight.approve_device`.",
+                    (
+                        f"New Milesight device discovered: `{dev_eui}`\n"
+                        f"Model: `{pending.get('model') or 'unknown'}`\n\n"
+                        "[Open Milesight panel](/milesight-frontend/index.html) to approve/ignore, "
+                        "or call service `milesight.approve_device`."
+                    ),
                     title="Milesight device discovered",
                 )
             return
