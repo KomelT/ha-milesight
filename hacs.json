@@ -1,0 +1,8 @@
+{
+  "name": "Milesight WT101 (MQTT)",
+  "content_in_root": false,
+  "domains": ["milesight_wt101"],
+  "zip_release": false,
+  "filename": "milesight_wt101.zip",
+  "homeassistant": "2023.11.0"
+}

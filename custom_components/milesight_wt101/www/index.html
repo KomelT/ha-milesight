@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Milesight WT101</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --accent: #22c55e;
+      --muted: #cbd5e1;
+      --text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(34,197,94,0.08), transparent 35%), radial-gradient(circle at 80% 10%, rgba(59,130,246,0.12), transparent 28%), var(--bg);
+      color: var(--text);
+    }
+    h1 { margin: 0 0 12px; font-weight: 700; letter-spacing: 0.02em; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    #grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+    .card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      backdrop-filter: blur(6px);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(34,197,94,0.12);
+      color: #86efac;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    dl { margin: 0; display: grid; grid-template-columns: 1fr 1fr; row-gap: 6px; }
+    dt { color: var(--muted); font-size: 13px; }
+    dd { margin: 0; font-weight: 600; }
+    #empty { padding: 24px; border: 1px dashed rgba(255,255,255,0.12); border-radius: 12px; text-align: center; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <h1>Milesight WT101</h1>
+  <p>Discovered devices from MQTT uplinks.</p>
+  <div id="empty" hidden>No devices have reported yet.</div>
+  <div id="grid"></div>
+  <script>
+    const grid = document.getElementById("grid");
+    const empty = document.getElementById("empty");
+
+    function render(devices) {
+      grid.innerHTML = "";
+      if (!devices.length) {
+        empty.hidden = false;
+        return;
+      }
+      empty.hidden = true;
+      devices.forEach(dev => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const header = document.createElement("div");
+        header.className = "header";
+        header.innerHTML = `<div><strong>${dev.name}</strong><div class="meta">${dev.dev_eui}</div></div><span class="chip">${dev.model}</span>`;
+        card.appendChild(header);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `Last seen ${new Date(dev.last_seen).toLocaleString()}`;
+        card.appendChild(meta);
+
+        const dl = document.createElement("dl");
+        Object.entries(dev.telemetry || {}).forEach(([key, value]) => {
+          const dt = document.createElement("dt");
+          dt.textContent = key.replace(/_/g, " ");
+          const dd = document.createElement("dd");
+          dd.textContent = value;
+          dl.appendChild(dt);
+          dl.appendChild(dd);
+        });
+        card.appendChild(dl);
+        grid.appendChild(card);
+      });
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch("/api/milesight_wt101/devices");
+        if (!res.ok) throw new Error(res.statusText);
+        const data = await res.json();
+        render(data.devices || []);
+      } catch (err) {
+        console.error("Failed to load devices", err);
+      } finally {
+        setTimeout(refresh, 5000);
+      }
+    }
+    refresh();
+  </script>
+</body>
+</html>

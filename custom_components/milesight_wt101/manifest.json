@@ -1,0 +1,13 @@
+{
+  "domain": "milesight_wt101",
+  "name": "Milesight WT101 (MQTT)",
+  "version": "0.1.0",
+  "documentation": "https://github.com/yourusername/ha-milesight",
+  "requirements": [],
+  "codeowners": ["@yourusername"],
+  "config_flow": true,
+  "iot_class": "local_push",
+  "dependencies": ["mqtt"],
+  "requirements": ["js2py==0.74.0"],
+  "loggers": ["custom_components.milesight_wt101"]
+}
