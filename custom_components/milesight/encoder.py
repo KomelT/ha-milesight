@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import importlib.util
 import logging
 from pathlib import Path
@@ -43,7 +44,7 @@ def encode_payload(model: str, payload: Dict[str, object]) -> bytes:
     except Exception as err:  # pragma: no cover - runtime safety
         raise EncodeError(f"failed to encode payload: {err}") from err
 
-    return _as_bytes(result, encoder_path)
+    return _normalize_downlink(result, encoder_path, payload)
 
 
 def _find_encoder_path(model: str) -> Optional[Path]:
@@ -86,3 +87,49 @@ def _as_bytes(result: object, path: Path) -> bytes:
         except Exception as err:  # pragma: no cover - defensive
             raise EncodeError(f"encoder {path.name} returned non-byte list: {err}") from err
     raise EncodeError(f"encoder {path.name} returned unsupported type {type(result)}")
+
+
+def _normalize_downlink(result: Any, path: Path, payload: Dict[str, object]) -> Dict[str, object]:
+    """Normalize encoder output to {confirmed, fport, data(base64)}."""
+    confirmed = bool(payload.get("confirmed", True))
+    fport = int(payload.get("fport", 85))
+
+    if isinstance(result, dict):
+        # Allow encoder to override fport/confirmed and raw data
+        confirmed = bool(result.get("confirmed", confirmed))
+        fport = int(result.get("fport", fport))
+        data_obj = result.get("data") or result.get("bytes")
+        if data_obj is None:
+            raise EncodeError(f"encoder {path.name} returned dict without data/bytes")
+        data_bytes = _to_bytes(data_obj, path)
+    else:
+        data_bytes = _to_bytes(result, path)
+
+    return {
+        "confirmed": confirmed,
+        "fport": fport,
+        "data": base64.b64encode(data_bytes).decode("ascii"),
+    }
+
+
+def _to_bytes(data: Any, path: Path) -> bytes:
+    """Coerce encoder output data to bytes."""
+    if isinstance(data, bytes):
+        return data
+    if isinstance(data, bytearray):
+        return bytes(data)
+    if isinstance(data, (list, tuple)):
+        try:
+            return bytes(data)
+        except Exception as err:  # pragma: no cover - defensive
+            raise EncodeError(f"encoder {path.name} returned non-byte list: {err}") from err
+    if isinstance(data, str):
+        # Assume hex or base64 string
+        try:
+            return bytes.fromhex(data)
+        except Exception:
+            try:
+                return base64.b64decode(data)
+            except Exception:
+                raise EncodeError(f"encoder {path.name} returned string data not hex/base64")
+    raise EncodeError(f"encoder {path.name} returned unsupported data type {type(data)}")

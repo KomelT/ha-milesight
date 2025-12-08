@@ -91,7 +91,14 @@ def _register_services(
             encoded = encode_payload(model, payload)
         except EncodeError as err:
             raise vol.Invalid(f"Encode failed: {err}") from err
-        await mqtt.async_publish(hass, topic, encoded.hex())
+        # If encoder returns a normalized downlink dict, publish as JSON; else hex.
+        if isinstance(encoded, dict):
+            message = json.dumps(encoded)
+        elif isinstance(encoded, (bytes, bytearray, list, tuple)):
+            message = bytes(encoded).hex()
+        else:
+            raise vol.Invalid(f"Unsupported encoded payload type: {type(encoded)}")
+        await mqtt.async_publish(hass, topic, message)
 
     hass.services.async_register(
         DOMAIN,
