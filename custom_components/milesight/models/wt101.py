@@ -7,7 +7,33 @@ from homeassistant.components.sensor import (
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntityDescription
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 
+"""definitions of WT101 sensor and binary sensor descriptions from SensorDecoders/wt-series/wt101/wt101-codec.json"""
+
 WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key="ipso_version",
+        name="IPSO Version",
+    ),
+    SensorEntityDescription(
+        key="hardware_version",
+        name="Hardware Version",
+    ),
+    SensorEntityDescription(
+        key="firmware_version",
+        name="Firmware Version",
+    ),
+    SensorEntityDescription(
+        key="lorawan_class",
+        name="LoRaWAN Class",
+    ),
+    SensorEntityDescription(
+        key="sn",
+        name="Serial Number",
+    ),
+    SensorEntityDescription(
+        key="tsl_version",
+        name="TSL Version",
+    ),
     SensorEntityDescription(
         key="battery",
         name="Battery",
@@ -32,14 +58,6 @@ WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
     ),
     SensorEntityDescription(
-        key="tamper_status",
-        name="Installation Status",
-    ),
-    SensorEntityDescription(
-        key="window_detection",
-        name="Open Window Detection",
-    ),
-    SensorEntityDescription(
         key="motor_calibration_result",
         name="Motor Calibration Result",
     ),
@@ -48,34 +66,57 @@ WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
         name="Motor Stroke",
     ),
     SensorEntityDescription(
-        key="freeze_protection",
-        name="Freeze Protection",
-    ),
-    SensorEntityDescription(
         key="motor_position",
         name="Motor Position",
+    ),
+    # time_zone
+    SensorEntityDescription(
+        key="report_interval",
+        name="Report Interval",
+        native_unit_of_measurement="min",
     ),
 )
 
 WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
+    BinarySensorEntityDescription(
+        key="device_status",
+        name="Device Status",
+        device_class=BinarySensorDeviceClass.POWER,
+    ),
+    BinarySensorEntityDescription(
+        key="tamper_status",
+        name="Tamper Status",
+        device_class=BinarySensorDeviceClass.TAMPER,
+    ),
     BinarySensorEntityDescription(
         key="window_detection",
         name="Window",
         device_class=BinarySensorDeviceClass.WINDOW,
     ),
     BinarySensorEntityDescription(
-        key="tamper_status",
-        name="Tampering",
-        device_class=BinarySensorDeviceClass.TAMPER,
-    ),
-    BinarySensorEntityDescription(
         key="freeze_protection",
         name="Freeze Protection",
-        device_class=BinarySensorDeviceClass.PROBLEM,
+        device_class=BinarySensorDeviceClass.POWER,
     ),
     BinarySensorEntityDescription(
-        key="motor_calibration_result",
-        name="Motor Calibration",
-        device_class=BinarySensorDeviceClass.PROBLEM,
+        key="reboot",
+        name="Reboot Scheduled",
+        device_class=BinarySensorDeviceClass.POWER
+    ),
+    # sync_time
+    BinarySensorEntityDescription(
+        key="time_sync_enable",
+        name="Sync Time Enabled",
+        device_class=BinarySensorDeviceClass.POWER
+    ),
+    BinarySensorEntityDescription(
+        key="report_status",
+        name="Report Status",
+        device_class=BinarySensorDeviceClass.POWER
+    ),
+    BinarySensorEntityDescription(
+        key="child_lock_config.enable",
+        name="Child Lock Enabled",
+        device_class=BinarySensorDeviceClass.POWER
     ),
 )

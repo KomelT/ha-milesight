@@ -107,13 +107,4 @@ class MilesightBinarySensor(BinarySensorEntity):
         else:
             value_norm = value
 
-        if key == "window_detection":
-            return value_norm in ("open", 1, True, "1")
-        if key == "tamper_status":
-            return value_norm in ("uninstalled", 1, True, "1")
-        if key == "freeze_protection":
-            return value_norm in ("triggered", 1, True, "1")
-        if key == "motor_calibration_result":
-            return value_norm not in ("success", 0, False, "0")
-
         return bool(value_norm)

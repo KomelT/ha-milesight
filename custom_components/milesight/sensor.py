@@ -90,7 +90,35 @@ class MilesightSensor(SensorEntity):
         device = self._manager.get_device(self._dev_eui)
         if not device:
             return
-        self._attr_native_value = device.telemetry.get(self.entity_description.key)
+        value = device.telemetry.get(self.entity_description.key)
+        if self.entity_description.key == "lorawan_class":
+            # Map class index to friendly label, fall back to raw if unknown.
+            mapping = {
+                "0": "Class A",
+                "1": "Class B",
+                "2": "Class C",
+                "3": "Class CtoB",
+                0: "Class A",
+                1: "Class B",
+                2: "Class C",
+                3: "Class CtoB",
+            }
+            value = mapping.get(value, value)
+        elif self.entity_description.key == "motor_calibration_result":
+            mapping = {
+                "0": "success",
+                "1": "fail: out of range",
+                "2": "fail: uninstalled",
+                "3": "calibration cleared",
+                "4": "temperature control disabled",
+                0: "success",
+                1: "fail: out of range",
+                2: "fail: uninstalled",
+                3: "calibration cleared",
+                4: "temperature control disabled",
+            }
+            value = mapping.get(value, value)
+        self._attr_native_value = value
         self._attr_extra_state_attributes = {
             "last_seen": device.last_seen.isoformat(),
             "model": device.model,
