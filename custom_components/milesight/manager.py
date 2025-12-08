@@ -75,20 +75,24 @@ class MilesightManager:
         if dev_eui is None:
             _LOGGER.warning("Skipping device update with missing dev_eui")
             return
-        
+
         dev_eui = dev_eui.lower().strip()
         if not dev_eui:
             _LOGGER.warning("Skipping device update with missing dev_eui")
             return
-        
+
         name = data.get("deviceName")
-        
+
         model = model.upper() if model else data.get("model", "UNKNOWN").upper()
 
         device = self.devices.get(dev_eui)
 
         if not device:
-            device = MilesightDevice(dev_eui=dev_eui, name=name if name else f"Milesight {dev_eui[-4:]}", model=model)
+            device = MilesightDevice(
+                dev_eui=dev_eui,
+                name=name if name else f"Milesight {dev_eui[-4:]}",
+                model=model,
+            )
             self.devices[dev_eui] = device
             async_dispatcher_send(
                 self.hass, SIGNAL_NEW_DEVICE.format(entry_id=self.entry_id), dev_eui

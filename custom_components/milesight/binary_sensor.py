@@ -64,15 +64,7 @@ class MilesightBinarySensor(BinarySensorEntity):
         self._dev_eui = device.dev_eui.lower()
         self._entry_id = entry_id
         self._attr_unique_id = f"{self._dev_eui}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self._dev_eui)},
-            manufacturer="Milesight",
-            model=device.model,
-            name=device.name or f"Milesight {self._dev_eui[-4:]}",
-            sw_version=device.sw_version,
-            hw_version=device.hw_version,
-            serial_number=device.serial_number,
-        )
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._dev_eui)})
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(
@@ -93,9 +85,7 @@ class MilesightBinarySensor(BinarySensorEntity):
             return
         value = device.telemetry.get(self.entity_description.key)
         self._attr_is_on = self._as_on(self.entity_description.key, value)
-        self._attr_extra_state_attributes = {
-            "last_seen": device.last_seen.isoformat()
-        }
+        self._attr_extra_state_attributes = {"last_seen": device.last_seen.isoformat()}
         self.async_write_ha_state()
 
     def _as_on(self, key: str, value) -> bool:

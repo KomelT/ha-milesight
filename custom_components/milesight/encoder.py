@@ -84,11 +84,15 @@ def _as_bytes(result: object, path: Path) -> bytes:
         try:
             return bytes(result)
         except Exception as err:  # pragma: no cover - defensive
-            raise EncodeError(f"encoder {path.name} returned non-byte list: {err}") from err
+            raise EncodeError(
+                f"encoder {path.name} returned non-byte list: {err}"
+            ) from err
     raise EncodeError(f"encoder {path.name} returned unsupported type {type(result)}")
 
 
-def _normalize_downlink(result: Any, path: Path, payload: Dict[str, object]) -> Dict[str, object]:
+def _normalize_downlink(
+    result: Any, path: Path, payload: Dict[str, object]
+) -> Dict[str, object]:
     """Normalize encoder output to {confirmed, fport, data(base64)}."""
     confirmed = bool(payload.get("confirmed", True))
     fport = int(payload.get("fport", 85))
@@ -121,7 +125,9 @@ def _to_bytes(data: Any, path: Path) -> bytes:
         try:
             return bytes(data)
         except Exception as err:  # pragma: no cover - defensive
-            raise EncodeError(f"encoder {path.name} returned non-byte list: {err}") from err
+            raise EncodeError(
+                f"encoder {path.name} returned non-byte list: {err}"
+            ) from err
     if isinstance(data, str):
         # Assume hex or base64 string
         try:
@@ -130,5 +136,9 @@ def _to_bytes(data: Any, path: Path) -> bytes:
             try:
                 return base64.b64decode(data)
             except Exception:
-                raise EncodeError(f"encoder {path.name} returned string data not hex/base64")
-    raise EncodeError(f"encoder {path.name} returned unsupported data type {type(data)}")
+                raise EncodeError(
+                    f"encoder {path.name} returned string data not hex/base64"
+                )
+    raise EncodeError(
+        f"encoder {path.name} returned unsupported data type {type(data)}"
+    )

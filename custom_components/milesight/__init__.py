@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 import json
 
 from homeassistant.components import mqtt
@@ -38,7 +37,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager = MilesightManager(hass, entry.entry_id)
     hass.data[DOMAIN][entry.entry_id] = manager
 
-    # No frontend panel; only API endpoints
     hass.http.register_view(MilesightDevicesView(manager))
     hass.http.register_view(MilesightDeviceActionView(manager))
 
@@ -55,7 +53,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     if downlink_topic:
         manager.register_mqtt(
-            await mqtt.async_subscribe(hass, downlink_topic, manager.async_handle_join_uplink)
+            await mqtt.async_subscribe(
+                hass, downlink_topic, manager.async_handle_join_uplink
+            )
         )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -63,23 +63,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def _async_setup_http(hass: HomeAssistant, manager: MilesightManager) -> None:
-    """Expose frontend assets and API endpoint."""
-    hass.http.register_view(MilesightDevicesView(manager))
-    hass.http.register_view(MilesightDeviceActionView(manager))
-
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    manager: MilesightManager = hass.data[DOMAIN].pop(entry.entry_id)
-    await manager.async_close()
-    await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    frontend.async_remove_panel(hass, "milesight")
-    return True
-
-
 def _register_services(
-    hass: HomeAssistant, entry: ConfigEntry, topic_template: str, manager: MilesightManager
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    topic_template: str,
+    manager: MilesightManager,
 ) -> None:
     """Register services for sending downlinks."""
 

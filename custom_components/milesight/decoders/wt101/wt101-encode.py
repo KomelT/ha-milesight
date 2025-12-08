@@ -97,15 +97,16 @@ def milesightDeviceEncode(payload: dict) -> list[int]:
     if "time_sync_enable" in payload:
         encoded += setTimeSyncEnable(payload["time_sync_enable"])
     if "temperature_calibration_settings" in payload:
-        encoded += setTemperatureCalibration(payload["temperature_calibration_settings"])
+        encoded += setTemperatureCalibration(
+            payload["temperature_calibration_settings"]
+        )
     if "temperature_control" in payload and "enable" in payload["temperature_control"]:
         encoded += setTemperatureControl(payload["temperature_control"]["enable"])
     if "temperature_control" in payload and "mode" in payload["temperature_control"]:
         encoded += setTemperatureControlMode(payload["temperature_control"]["mode"])
     if "target_temperature" in payload:
         encoded += setTargetTemperature(
-            payload["target_temperature"],
-            payload.get("temperature_tolerance")
+            payload["target_temperature"], payload.get("temperature_tolerance")
         )
     if "target_temperature_range" in payload:
         encoded += setTargetTemperatureRange(payload["target_temperature_range"])
@@ -132,7 +133,9 @@ def milesightDeviceEncode(payload: dict) -> list[int]:
     if "display_ambient_temperature" in payload:
         encoded += setDisplayAmbientTemperature(payload["display_ambient_temperature"])
     if "window_detection_valve_strategy" in payload:
-        encoded += setWindowDetectionValveStrategy(payload["window_detection_valve_strategy"])
+        encoded += setWindowDetectionValveStrategy(
+            payload["window_detection_valve_strategy"]
+        )
     if "dst_config" in payload:
         encoded += setDaylightSavingTime(payload["dst_config"])
     if "effective_stroke" in payload:
@@ -149,6 +152,7 @@ def milesightDeviceEncode(payload: dict) -> list[int]:
 
 
 # --- posamezne funkcije ---
+
 
 def reboot(reboot_val: int):
     yes_no_map = {0: "no", 1: "yes"}
@@ -251,7 +255,9 @@ def setTemperatureCalibration(temperature_calibration_settings: dict):
     buf.writeUInt8(0xFF)
     buf.writeUInt8(0xAB)
     buf.writeUInt8(getValue(enable_map, enable))
-    buf.writeInt16LE(int(calibration_value * 10 if calibration_value is not None else 0))
+    buf.writeInt16LE(
+        int(calibration_value * 10 if calibration_value is not None else 0)
+    )
     return buf.toBytes()
 
 
@@ -259,9 +265,7 @@ def setTemperatureControl(enable: int):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if enable not in enable_values:
-        raise ValueError(
-            f"temperature_control.enable must be one of {enable_values}"
-        )
+        raise ValueError(f"temperature_control.enable must be one of {enable_values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xFF)
@@ -274,9 +278,7 @@ def setTemperatureControlMode(mode: int):
     temperature_control_mode_map = {0: "auto", 1: "manual"}
     values = getValues(temperature_control_mode_map)
     if mode not in values:
-        raise ValueError(
-            f"temperature_control.mode must be one of {values}"
-        )
+        raise ValueError(f"temperature_control.mode must be one of {values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xFF)
@@ -328,13 +330,9 @@ def setOpenWindowDetection(open_window_detection: dict):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if enable not in enable_values:
-        raise ValueError(
-            f"open_window_detection.enable must be one of {enable_values}"
-        )
+        raise ValueError(f"open_window_detection.enable must be one of {enable_values}")
     if enable and not isinstance(temperature_threshold, (int, float)):
-        raise ValueError(
-            "open_window_detection.temperature_threshold must be a number"
-        )
+        raise ValueError("open_window_detection.temperature_threshold must be a number")
     if enable and not isinstance(time_val, (int, float)):
         raise ValueError("open_window_detection.time must be a number")
 
@@ -342,7 +340,9 @@ def setOpenWindowDetection(open_window_detection: dict):
     buf.writeUInt8(0xFF)
     buf.writeUInt8(0xAF)
     buf.writeUInt8(getValue(enable_map, enable))
-    buf.writeInt8(int(temperature_threshold * 10 if temperature_threshold is not None else 0))
+    buf.writeInt8(
+        int(temperature_threshold * 10 if temperature_threshold is not None else 0)
+    )
     buf.writeUInt16LE(int(time_val if time_val is not None else 0))
     return buf.toBytes()
 
@@ -377,9 +377,7 @@ def setValveCalibration(valve_calibration: int):
     yes_no_map = {0: "no", 1: "yes"}
     yes_no_values = getValues(yes_no_map)
     if valve_calibration not in yes_no_values:
-        raise ValueError(
-            f"valve_calibration must be one of {yes_no_values}"
-        )
+        raise ValueError(f"valve_calibration must be one of {yes_no_values}")
 
     if getValue(yes_no_map, valve_calibration) == 0:
         return []
@@ -390,9 +388,7 @@ def setValveControlAlgorithm(valve_control_algorithm: int):
     valve_control_algorithm_map = {0: "rate", 1: "pid"}
     values = getValues(valve_control_algorithm_map)
     if valve_control_algorithm not in values:
-        raise ValueError(
-            f"valve_control_algorithm must be one of {values}"
-        )
+        raise ValueError(f"valve_control_algorithm must be one of {values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xFF)
@@ -412,9 +408,7 @@ def setFreezeProtection(freeze_protection_config: dict):
             f"freeze_protection_config.enable must be one of {enable_values}"
         )
     if enable and not isinstance(temperature, (int, float)):
-        raise ValueError(
-            "freeze_protection_config.temperature must be a number"
-        )
+        raise ValueError("freeze_protection_config.temperature must be a number")
 
     buf = Buffer(5)
     buf.writeUInt8(0xFF)
@@ -428,9 +422,7 @@ def setChildLockEnable(enable: int):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if enable not in enable_values:
-        raise ValueError(
-            f"child_lock_config.enable must be one of {enable_values}"
-        )
+        raise ValueError(f"child_lock_config.enable must be one of {enable_values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xFF)
@@ -447,9 +439,7 @@ def setOfflineControlMode(offline_control_mode: int):
     }
     values = getValues(offline_control_mode_map)
     if offline_control_mode not in values:
-        raise ValueError(
-            f"offline_control_mode must be one of {values}"
-        )
+        raise ValueError(f"offline_control_mode must be one of {values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xFF)
@@ -482,9 +472,7 @@ def setOutsideTemperatureControl(outside_temperature_control: dict):
     if enable and not isinstance(timeout, (int, float)):
         raise ValueError("outside_temperature_control.timeout must be a number")
     if enable and (timeout < 3 or timeout > 60):
-        raise ValueError(
-            "outside_temperature_control.timeout must be between 3 and 60"
-        )
+        raise ValueError("outside_temperature_control.timeout must be between 3 and 60")
 
     buf = Buffer(4)
     buf.writeUInt8(0xFF)
@@ -498,9 +486,7 @@ def setDisplayAmbientTemperature(display_ambient_temperature: int):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if display_ambient_temperature not in enable_values:
-        raise ValueError(
-            f"display_ambient_temperature must be one of {enable_values}"
-        )
+        raise ValueError(f"display_ambient_temperature must be one of {enable_values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xF9)
@@ -513,9 +499,7 @@ def setWindowDetectionValveStrategy(window_detection_valve_strategy: int):
     window_detection_valve_strategy_map = {0: "keep", 1: "close"}
     values = getValues(window_detection_valve_strategy_map)
     if window_detection_valve_strategy not in values:
-        raise ValueError(
-            f"window_detection_valve_strategy must be one of {values}"
-        )
+        raise ValueError(f"window_detection_valve_strategy must be one of {values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xF9)
@@ -541,25 +525,17 @@ def setDaylightSavingTime(dst_config: dict):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if enable not in enable_values:
-        raise ValueError(
-            f"dst_config.enable must be one of {enable_values}"
-        )
+        raise ValueError(f"dst_config.enable must be one of {enable_values}")
 
     month_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     if enable and start_month not in month_values:
-        raise ValueError(
-            f"dst_config.start_month must be one of {month_values}"
-        )
+        raise ValueError(f"dst_config.start_month must be one of {month_values}")
     if enable and end_month not in month_values:
-        raise ValueError(
-            f"dst_config.end_month must be one of {month_values}"
-        )
+        raise ValueError(f"dst_config.end_month must be one of {month_values}")
 
     week_values = [1, 2, 3, 4, 5, 6, 7]
     if enable and start_week_day not in week_values:
-        raise ValueError(
-            f"dst_config.start_week_day must be one of {week_values}"
-        )
+        raise ValueError(f"dst_config.start_week_day must be one of {week_values}")
 
     buf = Buffer(12)
     buf.writeUInt8(0xFF)
@@ -618,9 +594,7 @@ def setTimeZone(time_zone: int):
 
     timezone_values = getValues(timezone_map)
     if time_zone not in timezone_values:
-        raise ValueError(
-            f"time_zone must be one of {timezone_values}"
-        )
+        raise ValueError(f"time_zone must be one of {timezone_values}")
 
     buf = Buffer(4)
     buf.writeUInt8(0xFF)
@@ -636,9 +610,7 @@ def setEffectiveStroke(effective_stroke: dict):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if enable not in enable_values:
-        raise ValueError(
-            f"effective_stroke.enable must be one of {enable_values}"
-        )
+        raise ValueError(f"effective_stroke.enable must be one of {enable_values}")
     if enable and (rate < 0 or rate > 100):
         raise ValueError("effective_stroke.rate must be between 0 and 100")
 
@@ -661,19 +633,13 @@ def setHeatingDate(heating_date: dict):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if enable not in enable_values:
-        raise ValueError(
-            f"heating_date.enable must be one of {enable_values}"
-        )
+        raise ValueError(f"heating_date.enable must be one of {enable_values}")
 
     month_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     if enable and start_month not in month_values:
-        raise ValueError(
-            f"heating_date.start_month must be one of {month_values}"
-        )
+        raise ValueError(f"heating_date.start_month must be one of {month_values}")
     if enable and end_month not in month_values:
-        raise ValueError(
-            f"heating_date.end_month must be one of {month_values}"
-        )
+        raise ValueError(f"heating_date.end_month must be one of {month_values}")
 
     buf = Buffer(9)
     buf.writeUInt8(0xF9)
@@ -755,9 +721,7 @@ def setChangeReportEnable(change_report_enable: int):
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
     if change_report_enable not in enable_values:
-        raise ValueError(
-            f"change_report_enable must be one of {enable_values}"
-        )
+        raise ValueError(f"change_report_enable must be one of {enable_values}")
 
     buf = Buffer(3)
     buf.writeUInt8(0xF9)

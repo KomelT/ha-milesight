@@ -58,12 +58,6 @@ class MilesightChildLockSwitch(SwitchEntity):
         self._attr_name = f"{device.name or 'Milesight'} Child Lock"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._dev_eui)},
-            manufacturer="Milesight",
-            model=device.model.upper(),
-            name=device.name or f"Milesight {self._dev_eui[-4:]}",
-            sw_version=device.sw_version,
-            hw_version=device.hw_version,
-            serial_number=device.serial_number,
         )
 
     async def async_added_to_hass(self) -> None:

@@ -39,8 +39,6 @@ class MilesightDeviceActionView(HomeAssistantView):
         data = await request.json()
         dev_eui = data.get("dev_eui")
         action = data.get("action")
-        model = data.get("model")
-        name = data.get("name")
 
         if action == "delete":
             await self._manager.async_delete_device(dev_eui)

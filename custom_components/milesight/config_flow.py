@@ -5,7 +5,6 @@ from __future__ import annotations
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
-from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
@@ -23,10 +22,21 @@ def _schema(user_input: dict | None = None) -> vol.Schema:
     defaults = user_input or {}
     return vol.Schema(
         {
-            vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "Milesight MQTT")): str,
-            vol.Required(CONF_JOIN_TOPIC, default=defaults.get(CONF_JOIN_TOPIC, DEFAULT_JOIN_TOPIC)): str,
-            vol.Required(CONF_UPLINK_TOPIC, default=defaults.get(CONF_UPLINK_TOPIC, DEFAULT_UPLINK_TOPIC)): str,
-            vol.Optional(CONF_DOWNLINK_TOPIC, default=defaults.get(CONF_DOWNLINK_TOPIC, DEFAULT_DOWNLINK_TOPIC)): str,
+            vol.Required(
+                CONF_NAME, default=defaults.get(CONF_NAME, "Milesight MQTT")
+            ): str,
+            vol.Required(
+                CONF_JOIN_TOPIC,
+                default=defaults.get(CONF_JOIN_TOPIC, DEFAULT_JOIN_TOPIC),
+            ): str,
+            vol.Required(
+                CONF_UPLINK_TOPIC,
+                default=defaults.get(CONF_UPLINK_TOPIC, DEFAULT_UPLINK_TOPIC),
+            ): str,
+            vol.Optional(
+                CONF_DOWNLINK_TOPIC,
+                default=defaults.get(CONF_DOWNLINK_TOPIC, DEFAULT_DOWNLINK_TOPIC),
+            ): str,
         }
     )
 
@@ -43,7 +53,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=_schema(), errors={})
 
 
-async def async_get_options_flow(entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+async def async_get_options_flow(
+    entry: config_entries.ConfigEntry,
+) -> config_entries.OptionsFlow:
     return OptionsFlowHandler(entry)
 
 
@@ -61,5 +73,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=_schema({**self.config_entry.data, **self.config_entry.options}),
+            data_schema=_schema(
+                {**self.config_entry.data, **self.config_entry.options}
+            ),
         )

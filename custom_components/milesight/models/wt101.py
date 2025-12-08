@@ -4,7 +4,10 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntityDescription,
 )
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntityDescription
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntityDescription,
+)
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 
 """definitions of WT101 sensor and binary sensor descriptions from SensorDecoders/wt-series/wt101/wt101-codec.json"""
@@ -101,22 +104,17 @@ WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
     BinarySensorEntityDescription(
         key="reboot",
         name="Reboot Scheduled",
-        device_class=BinarySensorDeviceClass.POWER
+        device_class=BinarySensorDeviceClass.POWER,
     ),
     # sync_time
     BinarySensorEntityDescription(
         key="time_sync_enable",
         name="Sync Time Enabled",
-        device_class=BinarySensorDeviceClass.POWER
+        device_class=BinarySensorDeviceClass.POWER,
     ),
     BinarySensorEntityDescription(
         key="report_status",
         name="Report Status",
-        device_class=BinarySensorDeviceClass.POWER
-    ),
-    BinarySensorEntityDescription(
-        key="child_lock_config.enable",
-        name="Child Lock",
-        device_class=BinarySensorDeviceClass.POWER
+        device_class=BinarySensorDeviceClass.POWER,
     ),
 )
