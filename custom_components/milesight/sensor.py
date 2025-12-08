@@ -24,7 +24,7 @@ async def async_setup_entry(
         device = manager.get_device(dev_eui)
         if not device:
             return
-        descriptions = MODEL_SENSORS.get(device.model.lower())
+        descriptions = MODEL_SENSORS.get(device.model.upper())
         if not descriptions:
             return
         new_entities: list[MilesightSensor] = []
@@ -68,6 +68,9 @@ class MilesightSensor(SensorEntity):
             manufacturer="Milesight",
             model=device.model.upper(),
             name=device.name or f"Milesight {self._dev_eui[-4:]}",
+            sw_version=device.sw_version,
+            hw_version=device.hw_version,
+            serial_number=device.serial_number,
         )
 
     async def async_added_to_hass(self) -> None:

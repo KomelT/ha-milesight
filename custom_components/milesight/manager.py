@@ -21,6 +21,9 @@ class MilesightDevice:
     dev_eui: str
     model: str
     name: Optional[str] = None
+    serial_number: Optional[str] = None
+    sw_version: Optional[str] = None
+    hw_version: Optional[str] = None
     last_seen: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     telemetry: Dict[str, object] = field(default_factory=dict)
 
@@ -97,6 +100,12 @@ class MilesightManager:
             device.name = name
         if model:
             device.model = model
+        if data.get("sn"):
+            device.serial_number = str(data["sn"])
+        if data.get("sw_version"):
+            device.sw_version = str(data["sw_version"])
+        if data.get("hw_version"):
+            device.hw_version = str(data["hw_version"])
         if data:
             for key, value in data.items():
                 if key in ("deviceName", "model"):
@@ -119,6 +128,9 @@ class MilesightManager:
             manufacturer="Milesight",
             name=dev.name or f"Milesight {dev.dev_eui[-4:]}",
             model=dev.model.upper(),
+            sw_version=dev.sw_version,
+            hw_version=dev.hw_version,
+            serial_number=dev.serial_number,
         )
 
     def _parse_topic(self, topic: str | None) -> tuple[Optional[str], Optional[str]]:
