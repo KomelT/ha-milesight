@@ -102,9 +102,9 @@ class MilesightManager:
             device.model = model
         if data.get("sn"):
             device.serial_number = str(data["sn"])
-        if data.get("sw_version"):
+        if data.get("firmware_version"):
             device.sw_version = str(data["sw_version"])
-        if data.get("hw_version"):
+        if data.get("hardware_version"):
             device.hw_version = str(data["hw_version"])
         if data:
             for key, value in data.items():
