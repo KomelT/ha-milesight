@@ -101,7 +101,7 @@ class MilesightManager:
             for key, value in data.items():
                 if key in ("deviceName", "model"):
                     continue
-                device.attributes[key] = value
+                device.telemetry[key] = value
 
         await self._async_sync_device_registry(device)
         async_dispatcher_send(
