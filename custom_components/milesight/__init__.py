@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import json
 
 from homeassistant.components import mqtt
 from homeassistant.config_entries import ConfigEntry
