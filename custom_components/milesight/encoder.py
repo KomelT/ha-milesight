@@ -50,7 +50,6 @@ def encode_payload(model: str, payload: Dict[str, object]) -> bytes:
 def _find_encoder_path(model: str) -> Optional[Path]:
     """Locate a Python encoder file in decoders/{model}/{model}-encoder.py (or -encode.py)."""
     candidates = [
-        ENCODER_ROOT / model / f"{model}-encoder.py",
         ENCODER_ROOT / model / f"{model}-encode.py",
     ]
     for path in candidates:

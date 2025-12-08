@@ -1,0 +1,34 @@
+# Describes the services provided by the Milesight integration.
+
+send_command:
+  name: Send Command
+  description: Send a downlink command to a Milesight device.
+  fields:
+    dev_eui:
+      name: DevEUI
+      description: Device EUI (hex string).
+      required: true
+      example: "A1B2C3D4E5F6A7B8"
+    model:
+      name: Model
+      description: Device model identifier (e.g., wt101).
+      required: false
+      default: wt101
+      example: wt101
+    payload:
+      name: Payload
+      description: Command payload (dict) to encode and send.
+      required: true
+      example: |
+        child_lock_config:
+          enable: 1
+
+delete_device:
+  name: Delete Device
+  description: Remove a Milesight device and its registry entry.
+  fields:
+    dev_eui:
+      name: DevEUI
+      description: Device EUI (hex string).
+      required: true
+      example: "A1B2C3D4E5F6A7B8"
