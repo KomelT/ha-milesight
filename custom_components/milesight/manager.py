@@ -95,17 +95,20 @@ class MilesightManager:
             )
 
         device.last_seen = datetime.now(timezone.utc)
+        serial_number = data.get("sn")
+        firmware_version = data.get("firmware_version")
+        hardware_version = data.get("hardware_version")
 
         if name:
             device.name = name
         if model:
             device.model = model
-        if data.get("sn"):
-            device.serial_number = str(data["sn"])
-        if data.get("firmware_version"):
-            device.sw_version = str(data["sw_version"])
-        if data.get("hardware_version"):
-            device.hw_version = str(data["hw_version"])
+        if serial_number:
+            device.serial_number = serial_number
+        if firmware_version:
+            device.sw_version = firmware_version
+        if hardware_version:
+            device.hw_version = hardware_version
         if data:
             for key, value in data.items():
                 if key in ("deviceName", "model"):
