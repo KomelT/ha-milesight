@@ -116,7 +116,7 @@ WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
     ),
     BinarySensorEntityDescription(
         key="child_lock_config.enable",
-        name="Child Lock Enabled",
+        name="Child Lock",
         device_class=BinarySensorDeviceClass.POWER
     ),
 )
