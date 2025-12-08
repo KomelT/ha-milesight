@@ -47,14 +47,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     downlink_topic = entry.data.get(CONF_DOWNLINK_TOPIC) or DEFAULT_DOWNLINK_TOPIC
 
     manager.register_mqtt(
-        await mqtt.async_subscribe(hass, join_topic, manager.async_handle_join)
+        await mqtt.async_subscribe(hass, join_topic, manager.async_handle_join_uplink)
     )
     manager.register_mqtt(
-        await mqtt.async_subscribe(hass, uplink_topic, manager.async_handle_uplink)
+        await mqtt.async_subscribe(hass, uplink_topic, manager.async_handle_join_uplink)
     )
     if downlink_topic:
         manager.register_mqtt(
-            await mqtt.async_subscribe(hass, downlink_topic, manager.async_handle_uplink)
+            await mqtt.async_subscribe(hass, downlink_topic, manager.async_handle_join_uplink)
         )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
