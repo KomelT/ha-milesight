@@ -1,83 +1,46 @@
 """Sensor descriptions for WT101."""
 
 from homeassistant.components.sensor import (
-    SensorDeviceClass,
     SensorEntityDescription,
 )
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from predefined_sensor_entity_description import (
+    ipso_version,
+    hardware_version,
+    firmware_version,
+    lorawan_class,
+    sn,
+    tsl_version,
+    battery,
+    temperature,
+    target_temperature,
+    valve_opening,
+    motor_calibration_result,
+    motor_stroke,
+    motor_position,
+    report_interval,
+)
 
 """definitions of WT101 sensor and binary sensor descriptions from SensorDecoders/wt-series/wt101/wt101-codec.json"""
 
 WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
-    SensorEntityDescription(
-        key="ipso_version",
-        name="IPSO Version",
-    ),
-    SensorEntityDescription(
-        key="hardware_version",
-        name="Hardware Version",
-    ),
-    SensorEntityDescription(
-        key="firmware_version",
-        name="Firmware Version",
-    ),
-    SensorEntityDescription(
-        key="lorawan_class",
-        name="LoRaWAN Class",
-    ),
-    SensorEntityDescription(
-        key="sn",
-        name="Serial Number",
-    ),
-    SensorEntityDescription(
-        key="tsl_version",
-        name="TSL Version",
-    ),
-    SensorEntityDescription(
-        key="battery",
-        name="Battery",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-    ),
-    SensorEntityDescription(
-        key="temperature",
-        name="Ambient Temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-    ),
-    SensorEntityDescription(
-        key="target_temperature",
-        name="Target Temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-    ),
-    SensorEntityDescription(
-        key="valve_opening",
-        name="Valve Opening",
-        native_unit_of_measurement=PERCENTAGE,
-    ),
-    SensorEntityDescription(
-        key="motor_calibration_result",
-        name="Motor Calibration Result",
-    ),
-    SensorEntityDescription(
-        key="motor_stroke",
-        name="Motor Stroke",
-    ),
-    SensorEntityDescription(
-        key="motor_position",
-        name="Motor Position",
-    ),
-    # time_zone
-    SensorEntityDescription(
-        key="report_interval",
-        name="Report Interval",
-        native_unit_of_measurement="min",
-    ),
+    ipso_version,
+    hardware_version,
+    firmware_version,
+    lorawan_class,
+    sn,
+    tsl_version,
+    battery,
+    temperature,
+    target_temperature,
+    valve_opening,
+    motor_calibration_result,
+    motor_stroke,
+    motor_position,
+    report_interval,
 )
 
 WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
