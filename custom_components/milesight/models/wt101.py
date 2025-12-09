@@ -40,7 +40,6 @@ WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
     tsl_version,
     battery,
     temperature,
-    target_temperature,
     valve_opening,
     motor_calibration_result,
     motor_stroke,

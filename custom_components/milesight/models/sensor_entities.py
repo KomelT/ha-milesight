@@ -60,7 +60,6 @@ target_temperature = SensorEntityDescription(
     name="Target Temperature",
     native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     device_class=SensorDeviceClass.TEMPERATURE,
-    entity_category=EntityCategory.CONFIG,
 )
 
 valve_opening = SensorEntityDescription(
