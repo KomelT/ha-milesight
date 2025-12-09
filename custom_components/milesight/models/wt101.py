@@ -7,7 +7,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
-from predefined_sensor_entity_description import (
+from .predefined_sensor_entity_description import (
     ipso_version,
     hardware_version,
     firmware_version,
