@@ -1,4 +1,4 @@
-# Milesight MQTT for Home Assistant
+# Milesight for Home Assistant
 
 Custom integration that listens to MQTT join/uplink topics, auto-discovers Milesight devices (model-aware) and exposes telemetry as entities. WT101 is supported out of the box; more models can be added via the `SensorDecoders` submodule (decoders/encoders are loaded from there).
 

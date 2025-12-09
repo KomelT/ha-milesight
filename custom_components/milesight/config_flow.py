@@ -1,4 +1,4 @@
-"""Config flow for Milesight MQTT integration."""
+"""Config flow for Milesight integration."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def _schema(user_input: dict | None = None) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
-                CONF_NAME, default=defaults.get(CONF_NAME, "Milesight MQTT")
+                CONF_NAME, default=defaults.get(CONF_NAME, "Milesight")
             ): str,
             vol.Required(
                 CONF_JOIN_TOPIC,

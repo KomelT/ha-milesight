@@ -1,6 +1,6 @@
 {
   "domain": "milesight",
-  "name": "Milesight MQTT",
+  "name": "Milesight",
   "version": "0.2.0",
   "documentation": "https://github.com/KomelT/ha-milesight",
   "issue_tracker": "https://github.com/KomelT/ha-milesight/issues",

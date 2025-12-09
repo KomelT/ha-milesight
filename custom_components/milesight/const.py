@@ -1,4 +1,4 @@
-"""Constants for the Milesight MQTT integration."""
+"""Constants for the Milesight integration."""
 
 DOMAIN = "milesight"
 

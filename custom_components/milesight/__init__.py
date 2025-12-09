@@ -1,4 +1,4 @@
-"""Milesight MQTT integration."""
+"""Milesight integration."""
 
 from __future__ import annotations
 
