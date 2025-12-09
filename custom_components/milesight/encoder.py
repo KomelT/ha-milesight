@@ -32,13 +32,9 @@ def encode_payload(model: str, payload: Dict[str, object]) -> bytes:
 
     encoder_mod = _load_encoder(encoder_path)
 
+    # Call a shim that tolerates missing optional fields where possible.
     try:
-        if hasattr(encoder_mod, "encode"):
-            result = encoder_mod.encode(payload)
-        elif hasattr(encoder_mod, "milesightDeviceEncode"):
-            result = encoder_mod.milesightDeviceEncode(payload)
-        else:
-            raise EncodeError(f"encoder function not found in {encoder_path.name}")
+        result = _call_encoder(encoder_mod, payload, encoder_path)
     except EncodeError:
         raise
     except Exception as err:  # pragma: no cover - runtime safety
@@ -70,6 +66,18 @@ def _load_encoder(path: Path):
     spec.loader.exec_module(mod)  # type: ignore[assignment]
     _ENCODER_CACHE[path] = mod
     return mod
+
+
+def _call_encoder(mod: Any, payload: Dict[str, object], path: Path) -> Any:
+    """Call the encoder, allowing for optional tolerance of missing extras."""
+    if hasattr(mod, "encode"):
+        try:
+            return mod.encode(payload)
+        except Exception as err:
+            raise
+    if hasattr(mod, "milesightDeviceEncode"):
+        return mod.milesightDeviceEncode(payload)
+    raise EncodeError(f"encoder function not found in {path.name}")
 
 
 def _as_bytes(result: object, path: Path) -> bytes:

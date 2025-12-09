@@ -59,17 +59,18 @@ class MilesightTargetTempNumber(NumberEntity):
         }
         self.async_write_ha_state()
 
-    async def async_set_native_value(self, value: int) -> None:
+    async def async_set_native_value(self, value: float) -> None:
         """Send downlink to set target temperature."""
         dev = self._manager.get_device(self._dev_eui)
         if not dev:
             return
-        payload = {"target_temperature": int(value)}
+        # WT101 encoder expects temperature_tolerance; default to 0 when not set.
+        payload = {"target_temperature": float(value), "temperature_tolerance": 0}
         await self.hass.services.async_call(
             DOMAIN,
             "send_command",
             {"dev_eui": self._dev_eui, "model": dev.model.lower(), "payload": payload},
             blocking=True,
         )
-        self._attr_native_value = int(value)
+        self._attr_native_value = float(value)
         self.async_write_ha_state()
