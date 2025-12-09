@@ -4,10 +4,9 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
-from .predefined_sensor_entity_description import (
+from .sensor_entities import (
     ipso_version,
     hardware_version,
     firmware_version,
@@ -22,6 +21,14 @@ from .predefined_sensor_entity_description import (
     motor_stroke,
     motor_position,
     report_interval,
+)
+from .binary_sensor_entities import (
+    device_status,
+    tamper_status,
+    window_detection,
+    reboot,
+    time_sync_enable,
+    report_status,
 )
 
 WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
@@ -42,35 +49,10 @@ WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
 )
 
 WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
-    BinarySensorEntityDescription(
-        key="device_status",
-        name="Device Status",
-        device_class=BinarySensorDeviceClass.POWER,
-    ),
-    BinarySensorEntityDescription(
-        key="tamper_status",
-        name="Tamper Status",
-        device_class=BinarySensorDeviceClass.TAMPER,
-    ),
-    BinarySensorEntityDescription(
-        key="window_detection",
-        name="Window",
-        device_class=BinarySensorDeviceClass.WINDOW,
-    ),
-    BinarySensorEntityDescription(
-        key="reboot",
-        name="Reboot Scheduled",
-        device_class=BinarySensorDeviceClass.POWER,
-    ),
-    # sync_time
-    BinarySensorEntityDescription(
-        key="time_sync_enable",
-        name="Sync Time Enabled",
-        device_class=BinarySensorDeviceClass.POWER,
-    ),
-    BinarySensorEntityDescription(
-        key="report_status",
-        name="Report Status",
-        device_class=BinarySensorDeviceClass.POWER,
-    ),
+    device_status,
+    tamper_status,
+    window_detection,
+    reboot,
+    time_sync_enable,
+    report_status,
 )

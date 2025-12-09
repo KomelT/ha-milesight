@@ -22,9 +22,7 @@ def _schema(user_input: dict | None = None) -> vol.Schema:
     defaults = user_input or {}
     return vol.Schema(
         {
-            vol.Required(
-                CONF_NAME, default=defaults.get(CONF_NAME, "Milesight")
-            ): str,
+            vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "Milesight")): str,
             vol.Required(
                 CONF_JOIN_TOPIC,
                 default=defaults.get(CONF_JOIN_TOPIC, DEFAULT_JOIN_TOPIC),

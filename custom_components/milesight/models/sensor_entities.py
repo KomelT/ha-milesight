@@ -6,7 +6,9 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 
 ipso_version = SensorEntityDescription(
-    key="ipso_version", name="IPSO Version", entity_category=EntityCategory.DIAGNOSTIC
+    key="ipso_version",
+    name="IPSO Version",
+    entity_category=EntityCategory.DIAGNOSTIC,
 )
 
 hardware_version = SensorEntityDescription(
@@ -58,6 +60,7 @@ target_temperature = SensorEntityDescription(
     name="Target Temperature",
     native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     device_class=SensorDeviceClass.TEMPERATURE,
+    entity_category=EntityCategory.CONFIG,
 )
 
 valve_opening = SensorEntityDescription(
@@ -70,7 +73,6 @@ motor_calibration_result = SensorEntityDescription(
     key="motor_calibration_result",
     name="Motor Calibration Result",
 )
-
 motor_stroke = SensorEntityDescription(
     key="motor_stroke",
     name="Motor Stroke",
@@ -85,4 +87,5 @@ report_interval = SensorEntityDescription(
     key="report_interval",
     name="Report Interval",
     native_unit_of_measurement="min",
+    entity_category=EntityCategory.CONFIG,
 )
