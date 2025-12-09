@@ -294,12 +294,11 @@ def setTargetTemperature(target_temperature, temperature_tolerance):
         raise ValueError("temperature_tolerance must be a number")
 
     # Bytes: FF B1 <temp> <tolerance_lo> <tolerance_hi>
-    buf = Buffer(5)
-    buf.writeUInt8(0xFF)
-    buf.writeUInt8(0xB1)
-    buf.writeInt8(int(target_temperature))
-    buf.writeUInt16LE(int(temperature_tolerance * 10))
-    return buf.toBytes()
+    temp_byte = int(target_temperature)
+    tol_val = int(temperature_tolerance * 10)
+    tol_lo = tol_val & 0xFF
+    tol_hi = (tol_val >> 8) & 0xFF
+    return [0xFF, 0xB1, temp_byte & 0xFF if temp_byte >= 0 else (temp_byte + 0x100), tol_lo, tol_hi]
 
 
 def setTargetTemperatureRange(target_temperature_range: dict):
