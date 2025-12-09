@@ -293,7 +293,8 @@ def setTargetTemperature(target_temperature, temperature_tolerance):
     if not isinstance(temperature_tolerance, (int, float)):
         raise ValueError("temperature_tolerance must be a number")
 
-    buf = Buffer(4)
+    # Bytes: FF B1 <temp> <tolerance_lo> <tolerance_hi>
+    buf = Buffer(5)
     buf.writeUInt8(0xFF)
     buf.writeUInt8(0xB1)
     buf.writeInt8(int(target_temperature))
