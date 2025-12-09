@@ -3,6 +3,5 @@
   "content_in_root": false,
   "zip_release": false,
   "filename": "milesight.zip",
-  "homeassistant": "2023.11.0",
-  "image": "https://raw.githubusercontent.com/KomelT/ha-milesight/refs/heads/master/assets/milesight_logo.jpg"
+  "homeassistant": "2023.11.0"
 }
