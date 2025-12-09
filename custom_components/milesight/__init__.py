@@ -96,7 +96,7 @@ def _register_services(
         schema=vol.Schema(
             {
                 vol.Required("dev_eui"): str,
-                vol.Optional("model", default="wt101"): str,
+                vol.Optional("model"): str,
                 vol.Required("payload"): dict,
             }
         ),

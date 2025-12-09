@@ -33,15 +33,7 @@ class MilesightTargetTempNumber(NumberEntity):
         self._entry_id = entry_id
         self._attr_unique_id = f"{self._entry_id}_{self._dev_eui}_target_temperature"
         self._attr_name = "Target Temperature"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self._dev_eui)},
-            manufacturer="Milesight",
-            model=device.model.upper(),
-            name=device.name or f"Milesight {self._dev_eui[-4:]}",
-            sw_version=device.sw_version,
-            hw_version=device.hw_version,
-            serial_number=device.serial_number,
-        )
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._dev_eui)})
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(
@@ -67,17 +59,17 @@ class MilesightTargetTempNumber(NumberEntity):
         }
         self.async_write_ha_state()
 
-    async def async_set_native_value(self, value: float) -> None:
+    async def async_set_native_value(self, value: int) -> None:
         """Send downlink to set target temperature."""
         dev = self._manager.get_device(self._dev_eui)
         if not dev:
             return
-        payload = {"target_temperature": float(value)}
+        payload = {"target_temperature": int(value)}
         await self.hass.services.async_call(
             DOMAIN,
             "send_command",
             {"dev_eui": self._dev_eui, "model": dev.model.lower(), "payload": payload},
             blocking=True,
         )
-        self._attr_native_value = float(value)
+        self._attr_native_value = int(value)
         self.async_write_ha_state()
