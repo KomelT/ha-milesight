@@ -9,6 +9,7 @@ from typing import Callable, Dict, Optional
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN, SIGNAL_DEVICE_UPDATED, SIGNAL_NEW_DEVICE
@@ -129,16 +130,21 @@ class MilesightManager:
     async def _async_sync_device_registry(self, dev: MilesightDevice) -> None:
         """Ensure device is represented in HA's registry."""
         registry = dr.async_get(self.hass)
-        registry.async_get_or_create(
-            config_entry_id=self.entry_id,
-            identifiers={(DOMAIN, dev.dev_eui.lower())},
-            manufacturer="Milesight",
-            name=dev.name or f"Milesight {dev.dev_eui[-4:]}",
-            model=dev.model.upper(),
-            sw_version=dev.sw_version,
-            hw_version=dev.hw_version,
-            serial_number=dev.serial_number,
-        )
+        try:
+            registry.async_get_or_create(
+                config_entry_id=self.entry_id,
+                identifiers={(DOMAIN, dev.dev_eui.lower())},
+                manufacturer="Milesight",
+                name=dev.name or f"Milesight {dev.dev_eui[-4:]}",
+                model=dev.model.upper(),
+                sw_version=dev.sw_version,
+                hw_version=dev.hw_version,
+                serial_number=dev.serial_number,
+            )
+        except HomeAssistantError as err:
+            _LOGGER.warning(
+                "Skipping device registry sync for %s: %s", dev.dev_eui, err
+            )
 
     def _parse_topic(self, topic: str | None) -> tuple[Optional[str], Optional[str]]:
         """Extract dev_eui and model from topic milesight/{model}/{dev_eui}/<type>."""

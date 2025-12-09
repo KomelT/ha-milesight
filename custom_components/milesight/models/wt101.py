@@ -24,8 +24,6 @@ from .predefined_sensor_entity_description import (
     report_interval,
 )
 
-"""definitions of WT101 sensor and binary sensor descriptions from SensorDecoders/wt-series/wt101/wt101-codec.json"""
-
 WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
     ipso_version,
     hardware_version,
@@ -58,11 +56,6 @@ WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
         key="window_detection",
         name="Window",
         device_class=BinarySensorDeviceClass.WINDOW,
-    ),
-    BinarySensorEntityDescription(
-        key="freeze_protection",
-        name="Freeze Protection",
-        device_class=BinarySensorDeviceClass.POWER,
     ),
     BinarySensorEntityDescription(
         key="reboot",
