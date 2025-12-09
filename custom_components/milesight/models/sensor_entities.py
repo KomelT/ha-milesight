@@ -86,5 +86,4 @@ report_interval = SensorEntityDescription(
     key="report_interval",
     name="Report Interval",
     native_unit_of_measurement="min",
-    entity_category=EntityCategory.CONFIG,
 )
