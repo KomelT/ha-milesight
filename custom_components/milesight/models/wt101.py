@@ -15,7 +15,6 @@ from .sensor_entities import (
     tsl_version,
     battery,
     temperature,
-    target_temperature,
     valve_opening,
     motor_calibration_result,
     motor_stroke,

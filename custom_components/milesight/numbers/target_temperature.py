@@ -18,9 +18,9 @@ class MilesightTargetTempNumber(NumberEntity):
     _attr_should_poll = False
     _attr_entity_registry_enabled_default = True
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    _attr_native_min_value = 5
-    _attr_native_max_value = 35
-    _attr_native_step = 0.5
+    _attr_native_min_value = 10
+    _attr_native_max_value = 28
+    _attr_native_step = 1
 
     def __init__(
         self,
