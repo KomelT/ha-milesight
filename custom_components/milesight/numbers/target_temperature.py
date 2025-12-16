@@ -65,7 +65,7 @@ class MilesightTargetTempNumber(NumberEntity):
         if not dev:
             return
         # WT101 encoder expects temperature_tolerance; default to 0 when not set.
-        payload = {"target_temperature": float(value), "temperature_tolerance": 0}
+        payload = {"target_temperature": float(value), "temperature_tolerance": 1}
         await self.hass.services.async_call(
             DOMAIN,
             "send_command",
