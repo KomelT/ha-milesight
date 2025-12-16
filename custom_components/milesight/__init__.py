@@ -73,7 +73,7 @@ def _register_services(
 
     async def _handle_send_command(call):
         dev_eui: str = call.data["dev_eui"]
-        model: str = call.data.get("model") or "wt101"
+        model: str = call.data.get("model")
         payload: dict = call.data.get("payload") or {}
         topic = _build_downlink_topic(topic_template, model, dev_eui)
         try:

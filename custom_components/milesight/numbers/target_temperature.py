@@ -35,6 +35,10 @@ class MilesightTargetTempNumber(NumberEntity):
         self._attr_name = "Target Temperature"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._dev_eui)})
 
+        self._attr_native_min_value = device.telemetry.get("min_target_temperature", 10)
+        self._attr_native_max_value = device.telemetry.get("max_target_temperature", 28)
+        self._attr_native_step = device.telemetry.get("temperature_tolerance", 1)
+
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(
             async_dispatcher_connect(
@@ -65,7 +69,7 @@ class MilesightTargetTempNumber(NumberEntity):
         if not dev:
             return
         # WT101 encoder expects temperature_tolerance; default to 0 when not set.
-        payload = {"target_temperature": float(value), "temperature_tolerance": 1}
+        payload = {"target_temperature": float(value), "temperature_tolerance": dev.telemetry.get("temperature_tolerance", 1)}
         await self.hass.services.async_call(
             DOMAIN,
             "send_command",

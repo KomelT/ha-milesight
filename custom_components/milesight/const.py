@@ -11,7 +11,7 @@ DEFAULT_JOIN_TOPIC = "milesight/+/+/join"
 DEFAULT_UPLINK_TOPIC = "milesight/+/+/uplink"
 DEFAULT_DOWNLINK_TOPIC = "milesight/+/+/downlink"
 
-PLATFORMS = ["sensor", "binary_sensor", "switch", "number"]
+PLATFORMS = ["sensor", "binary_sensor", "switch", "number", "button"]
 
 # Dispatcher signals (formatted with entry_id / dev_eui at runtime)
 SIGNAL_NEW_DEVICE = f"{DOMAIN}_new_device" + "_{entry_id}"

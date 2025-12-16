@@ -10,7 +10,9 @@ from typing import Dict, Optional, Any
 
 _LOGGER = logging.getLogger(__name__)
 
-ENCODER_ROOT = Path(__file__).parent / "codecs"
+ENCODER_ROOTS = [
+    Path(__file__).parent / "codecs"
+]
 _ENCODER_CACHE: Dict[Path, Any] = {}
 
 
@@ -44,13 +46,18 @@ def encode_payload(model: str, payload: Dict[str, object]) -> bytes:
 
 
 def _find_encoder_path(model: str) -> Optional[Path]:
-    """Locate a Python encoder file in decoders/{model}/encode.py."""
-    candidates = [
-        ENCODER_ROOT / model / "encode.py",
+    """Locate a Python encoder file in codecs|decoders/{model}/..."""
+    filenames = [
+        "encode.py",
+        f"{model}-encode.py",
+        f"{model}-encoder.py",
+        "encoder.py",
     ]
-    for path in candidates:
-        if path.exists():
-            return path
+    for root in ENCODER_ROOTS:
+        for name in filenames:
+            path = root / model / name
+            if path.exists():
+                return path
     return None
 
 
