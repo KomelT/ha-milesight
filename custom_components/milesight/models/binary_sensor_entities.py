@@ -21,12 +21,6 @@ window_detection = BinarySensorEntityDescription(
     device_class=BinarySensorDeviceClass.WINDOW,
 )
 
-reboot = BinarySensorEntityDescription(
-    key="reboot",
-    name="Reboot Scheduled",
-    device_class=BinarySensorDeviceClass.POWER,
-)
-
 time_sync_enable = BinarySensorEntityDescription(
     key="time_sync_enable",
     name="Sync Time Enabled",

@@ -9,9 +9,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, SIGNAL_NEW_DEVICE
 from .manager import MilesightManager
-from .buttons import MilesightRebootButton
+from .buttons import MilesightRebootButton, MilesightReportStatusButton
 
 _SUPPORTED_REBOOT_MODELS = {"WT101"}
+_SUPPORTED_REPORT_STATUS_MODELS = {"WT101"}
 
 
 async def async_setup_entry(
@@ -27,6 +28,10 @@ async def async_setup_entry(
         entities = []
         if device.model.upper() in _SUPPORTED_REBOOT_MODELS:
             entities.append(MilesightRebootButton(manager, device, entry.entry_id))
+        if device.model.upper() in _SUPPORTED_REPORT_STATUS_MODELS:
+            entities.append(
+                MilesightReportStatusButton(manager, device, entry.entry_id)
+            )
         if entities:
             async_add_entities(entities)
 
