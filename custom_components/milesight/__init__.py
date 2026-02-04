@@ -8,6 +8,7 @@ import json
 from homeassistant.components import mqtt
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 import voluptuous as vol
 from homeassistant.helpers.typing import ConfigType
 
@@ -33,30 +34,39 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the integration from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
     manager = MilesightManager(hass, entry.entry_id)
-    hass.data[DOMAIN][entry.entry_id] = manager
-
-    hass.http.register_view(MilesightDevicesView(manager))
-    hass.http.register_view(MilesightDeviceActionView(manager))
 
     # Register MQTT listeners
     join_topic = entry.data[CONF_JOIN_TOPIC]
     uplink_topic = entry.data[CONF_UPLINK_TOPIC]
     downlink_topic = entry.data.get(CONF_DOWNLINK_TOPIC) or DEFAULT_DOWNLINK_TOPIC
 
-    manager.register_mqtt(
-        await mqtt.async_subscribe(hass, join_topic, manager.async_handle_join_uplink)
-    )
-    manager.register_mqtt(
-        await mqtt.async_subscribe(hass, uplink_topic, manager.async_handle_join_uplink)
-    )
-    if downlink_topic:
+    try:
         manager.register_mqtt(
             await mqtt.async_subscribe(
-                hass, downlink_topic, manager.async_handle_join_uplink
+                hass, join_topic, manager.async_handle_join_uplink
             )
         )
+        manager.register_mqtt(
+            await mqtt.async_subscribe(
+                hass, uplink_topic, manager.async_handle_join_uplink
+            )
+        )
+        if downlink_topic:
+            manager.register_mqtt(
+                await mqtt.async_subscribe(
+                    hass, downlink_topic, manager.async_handle_join_uplink
+                )
+            )
+    except HomeAssistantError as err:
+        raise ConfigEntryNotReady(
+            "MQTT is not ready. Configure the MQTT integration and broker credentials first."
+        ) from err
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = manager
+    hass.http.register_view(MilesightDevicesView(manager))
+    hass.http.register_view(MilesightDeviceActionView(manager))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _register_services(hass, entry, downlink_topic, manager)
