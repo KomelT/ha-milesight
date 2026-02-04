@@ -9,6 +9,7 @@ from homeassistant.components import mqtt
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 import voluptuous as vol
 from homeassistant.helpers.typing import ConfigType
 
@@ -25,6 +26,7 @@ from .http_view import MilesightDevicesView, MilesightDeviceActionView
 from .manager import MilesightManager
 
 _LOGGER = logging.getLogger(__name__)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

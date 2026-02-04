@@ -9,6 +9,6 @@
   "codeowners": ["@KomelT"],
   "config_flow": true,
   "iot_class": "local_push",
-  "dependencies": ["mqtt"],
+  "dependencies": ["mqtt", "http"],
   "loggers": ["custom_components.milesight"]
 }
