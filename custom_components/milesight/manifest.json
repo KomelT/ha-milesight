@@ -1,7 +1,8 @@
 {
   "domain": "milesight",
   "name": "Milesight",
-  "version": "0.2.0",
+  "version": "0.0.1",
+  "integration_type": "hub",
   "documentation": "https://github.com/KomelT/ha-milesight",
   "issue_tracker": "https://github.com/KomelT/ha-milesight/issues",
   "requirements": [],
