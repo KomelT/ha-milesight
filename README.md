@@ -2,31 +2,13 @@
 
 [![Open your Home Assistant instance and add this repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=KomelT&repository=ha-milesight&category=integration)
 
-Custom integration that listens to MQTT join/uplink topics, auto-discovers Milesight devices (model-aware) and exposes telemetry as entities. WT101 is supported out of the box; more models can be added via the `SensorDecoders` submodule (decoders/encoders are loaded from there).
+Custom integration that listens to MQTT join/uplink topics, auto-discovers Milesight devices (model-aware) and exposes telemetry as entities.
 
 ## Features
 - Configurable MQTT topics for join/uplink/downlink (via config flow)
 - Uplink payload decoding using official Milesight JS decoders (via `js2py`)
 - Dynamic device/entity creation based on the model (WT101 included)
 - No built-in panel; use HA entities/services directly
-
-## Expected MQTT payloads
-- Topic pattern: `milesight/{model}/{dev_eui}/uplink` (defaults to wildcards `milesight/+/+/uplink`, same for join/downlink).
-- **Join topic**: JSON containing `dev_eui` (e.g. `{"dev_eui": "A1B2C3D4E5F6A7B8", "name": "Living Room"}`) or the DevEUI as plain text. DevEUI and model are also parsed from the topic path.
-- **Uplink topic**: JSON with `dev_eui` plus one of `data` (base64), `payload_hex`/`payload` (hex string), `payload_raw`/`bytes` (array). Plain hex/base64 payloads without JSON are accepted if the DevEUI is in the topic.
-
-## Sending downlinks / setpoints
-- Service: `milesight.send_command`
-- Data:
-  - `dev_eui` (required)
-  - `model` (optional, defaults to `wt101`)
-  - `payload` (required dict), e.g. `{"target_temperature": 22}` for WT101
-- The integration encodes the payload with the model's JS encoder from the `SensorDecoders` submodule and publishes it to the downlink topic (default `milesight/{model}/{dev_eui}/downlink`; respects your configured template, replacing `+` or `{model}`/`{dev_eui}`).
-
-## Development notes
-- Integration domain: `milesight`
-- Frontend assets: `custom_components/milesight/www/index.html`
-- API endpoint backing the panel: `GET /api/milesight/devices`
 
 ## Prerequisites (required before installing Milesight)
 1. Install the **Mosquitto broker** add-on in Home Assistant.
@@ -38,3 +20,20 @@ Custom integration that listens to MQTT join/uplink topics, auto-discovers Miles
 1. Add this repository as a custom integration in HACS (or use the button at the top).
 2. Install and restart Home Assistant.
 3. Add the integration from **Settings -> Devices & Services -> Add Integration -> Milesight** and set your MQTT topics.
+
+## Milesight GW setup (send data to Home Assistant)
+After installing the integration, configure MQTT on your Milesight gateway:
+
+1. Open Milesight GW web UI.
+2. Go to MQTT settings (or Application -> MQTT).
+3. Set broker connection to your Home Assistant MQTT broker:
+   - Host/IP: your HA or Mosquitto host
+   - Port: `1883` (or your TLS port)
+   - Username/password: MQTT user created in Home Assistant
+4. Enable publish for uplink/join events.
+5. Set topics to match the Home Assistant integration defaults:
+   - Join topic: `milesight/{model}/{dev_eui}/join`
+   - Uplink topic: `milesight/{model}/{dev_eui}/uplink`
+   - Downlink topic: `milesight/{model}/{dev_eui}/downlink`
+6. Save/apply and restart MQTT service on the gateway (if required).
+7. Trigger one device uplink and verify entities appear in Home Assistant.
