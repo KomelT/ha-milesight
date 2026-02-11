@@ -7,15 +7,18 @@ from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 
+from homeassistant.helpers.entity import EntityCategory
+
 from ..const import DOMAIN, SIGNAL_DEVICE_UPDATED
 from ..manager import MilesightManager, MilesightDevice
 
-_FREEZE_PROTECTION_KEY = "freeze_protection"
+_FREEZE_PROTECTION_KEY = "freeze_protection_config.enable"
 
 
 class MilesightFreezeProtectionSwitch(SwitchEntity):
     _attr_should_poll = False
     _attr_entity_registry_enabled_default = True
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
@@ -58,7 +61,11 @@ class MilesightFreezeProtectionSwitch(SwitchEntity):
         self.async_write_ha_state()
 
     def _extract_state(self, device: MilesightDevice) -> bool:
-        value = device.telemetry.get(_FREEZE_PROTECTION_KEY)
+        value = None
+        if isinstance(device.telemetry.get("freeze_protection_config"), dict):
+            value = device.telemetry["freeze_protection_config"].get("enable")
+        if value is None:
+            value = device.telemetry.get(_FREEZE_PROTECTION_KEY)
         return str(value).lower() in ("1", "on", "true", "enabled", "enable")
 
     async def async_turn_on(self, **kwargs) -> None:

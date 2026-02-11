@@ -27,8 +27,9 @@ time_sync_enable = BinarySensorEntityDescription(
     device_class=BinarySensorDeviceClass.POWER,
 )
 
-report_status = BinarySensorEntityDescription(
-    key="report_status",
-    name="Report Status",
-    device_class=BinarySensorDeviceClass.POWER,
+freeze_protection = BinarySensorEntityDescription(
+    key="freeze_protection",
+    name="Freeze Protection",
+    device_class=BinarySensorDeviceClass.SAFETY,
 )
+

@@ -26,7 +26,7 @@ from .binary_sensor_entities import (
     tamper_status,
     window_detection,
     time_sync_enable,
-    report_status,
+    freeze_protection,
 )
 
 WT101_SENSORS: tuple[SensorEntityDescription, ...] = (
@@ -50,5 +50,5 @@ WT101_BINARIES: tuple[BinarySensorEntityDescription, ...] = (
     tamper_status,
     window_detection,
     time_sync_enable,
-    report_status,
+    freeze_protection,
 )

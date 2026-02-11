@@ -6,7 +6,7 @@ from homeassistant.components.number import NumberEntity
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 
 from ..const import DOMAIN, SIGNAL_DEVICE_UPDATED
 from ..manager import MilesightManager, MilesightDevice
@@ -17,6 +17,7 @@ class MilesightTargetTempNumber(NumberEntity):
 
     _attr_should_poll = False
     _attr_entity_registry_enabled_default = True
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_native_min_value = 10
     _attr_native_max_value = 28

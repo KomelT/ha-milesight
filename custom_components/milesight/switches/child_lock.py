@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 
 from ..const import DOMAIN, SIGNAL_DEVICE_UPDATED
 from ..manager import MilesightManager, MilesightDevice
@@ -16,6 +16,7 @@ _CHILD_LOCK_KEY = "child_lock_config.enable"
 class MilesightChildLockSwitch(SwitchEntity):
     _attr_should_poll = False
     _attr_entity_registry_enabled_default = True
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
