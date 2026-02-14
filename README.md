@@ -1,4 +1,6 @@
-# Milesight for Home Assistant
+<img src="https://github.com/home-assistant/brands/blob/master/custom_integrations/milesight/logo.png" alt="Milesight Integration for Home Assistant" width="300">
+
+# Milesight Integration for Home Assistant
 
 [![Open your Home Assistant instance and add this repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=KomelT&repository=ha-milesight&category=integration)
 
@@ -37,3 +39,6 @@ After installing the integration, configure MQTT on your Milesight gateway:
    - Downlink topic: `milesight/{model}/{dev_eui}/downlink`
 6. Save/apply and restart MQTT service on the gateway (if required).
 7. Trigger one device uplink and verify entities appear in Home Assistant.
+
+## Disclaimer
+This project is an independent, community-driven repository and is not affiliated with, endorsed by, or in any way officially connected with Milesight Technology Co., Ltd. All product names, logos, and brands are property of their respective owners.
