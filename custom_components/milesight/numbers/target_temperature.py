@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.components.number import NumberEntity
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 
@@ -36,9 +37,21 @@ class MilesightTargetTempNumber(NumberEntity):
         self._attr_name = "Target Temperature"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._dev_eui)})
 
-        self._attr_native_min_value = device.telemetry.get("min_target_temperature", 10)
-        self._attr_native_max_value = device.telemetry.get("max_target_temperature", 28)
-        self._attr_native_step = device.telemetry.get("temperature_tolerance", 1)
+        target_range = device.telemetry.get("target_temperature_range", {})
+        if not isinstance(target_range, dict):
+            target_range = {}
+        minimum = target_range.get("min", 10)
+        maximum = target_range.get("max", 28)
+        valid_bounds = (
+            isinstance(minimum, (int, float))
+            and not isinstance(minimum, bool)
+            and isinstance(maximum, (int, float))
+            and not isinstance(maximum, bool)
+            and minimum <= maximum
+        )
+        self._attr_native_min_value = minimum if valid_bounds else 10
+        self._attr_native_max_value = maximum if valid_bounds else 28
+        self._attr_native_step = 1
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(
@@ -69,13 +82,20 @@ class MilesightTargetTempNumber(NumberEntity):
         dev = self._manager.get_device(self._dev_eui)
         if not dev:
             return
-        # WT101 encoder expects temperature_tolerance; default to 0 when not set.
-        payload = {"target_temperature": float(value), "temperature_tolerance": dev.telemetry.get("temperature_tolerance", 1)}
+        try:
+            integral = not isinstance(value, bool) and float(value).is_integer()
+        except (TypeError, ValueError):
+            integral = False
+        if not integral:
+            raise HomeAssistantError("target temperature must be a whole number of degrees")
+        target_temperature = int(value)
+        # WT101 encoder expects temperature_tolerance; default to 1 when not set.
+        payload = {"target_temperature": target_temperature, "temperature_tolerance": dev.telemetry.get("temperature_tolerance", 1)}
         await self.hass.services.async_call(
             DOMAIN,
             "send_command",
             {"dev_eui": self._dev_eui, "model": dev.model.lower(), "payload": payload},
             blocking=True,
         )
-        self._attr_native_value = float(value)
+        self._attr_native_value = target_temperature
         self.async_write_ha_state()

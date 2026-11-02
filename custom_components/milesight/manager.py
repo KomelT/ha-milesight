@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
+import base64
+import binascii
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Callable, Dict, Optional
@@ -14,8 +16,11 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN, SIGNAL_DEVICE_UPDATED, SIGNAL_NEW_DEVICE
+from .codec_runtime import CodecError, decode
 
 _LOGGER = logging.getLogger(__name__)
+MAX_RAW_PAYLOAD = 255
+MAX_MQTT_PAYLOAD = 64 * 1024
 
 
 @dataclass
@@ -67,6 +72,10 @@ class MilesightManager:
             return
 
         try:
+            body = msg.payload
+            if isinstance(body, (str, bytes, bytearray)) and len(body) > MAX_MQTT_PAYLOAD:
+                _LOGGER.warning("Ignoring oversized MQTT uplink")
+                return
             parsed = json.loads(msg.payload)
         except (json.JSONDecodeError, UnicodeDecodeError, TypeError):
             _LOGGER.warning("Ignoring unparsable uplink: %s", msg.payload)
@@ -75,11 +84,68 @@ class MilesightManager:
             _LOGGER.warning("Ignoring uplink that is not a JSON object")
             return
 
+        data = await self._async_decode_wrapper(topic_model, parsed)
+        if data is None:
+            return
         await self._async_add_or_update_device(
             topic_dev_eui,
             model=topic_model,
-            data=parsed,
+            data=data,
         )
+
+    async def _async_decode_wrapper(
+        self, model: str, parsed: dict[str, object]
+    ) -> dict[str, object] | None:
+        """Decode a gateway raw-data wrapper without blocking the event loop."""
+        raw = parsed.get("data")
+        encoding = parsed.get(
+            "encoding", parsed.get("dataEncoding", parsed.get("data_encoding"))
+        )
+        if raw is None:
+            raw = parsed.get("bytes")
+        if "data_hex" in parsed:
+            raw, encoding = parsed["data_hex"], "hex"
+        if raw is None:
+            return parsed
+        try:
+            if isinstance(raw, str):
+                compact = raw.strip()
+                if encoding is not None and str(encoding).lower() == "hex":
+                    if not compact or len(compact) % 2 or len(compact) > MAX_RAW_PAYLOAD * 2:
+                        raise ValueError("invalid hex payload")
+                    payload = bytes.fromhex(compact)
+                elif encoding is None or str(encoding).lower() == "base64":
+                    if not compact or len(compact) > 4 * ((MAX_RAW_PAYLOAD + 2) // 3):
+                        raise ValueError("invalid base64 payload size")
+                    try:
+                        payload = base64.b64decode(compact, validate=True)
+                    except (ValueError, binascii.Error) as err:
+                        raise ValueError("invalid base64 payload") from err
+                else:
+                    raise ValueError("unknown raw payload encoding")
+            elif isinstance(raw, list) and all(
+                type(item) is int and 0 <= item <= 255 for item in raw
+            ):
+                if not 1 <= len(raw) <= MAX_RAW_PAYLOAD:
+                    raise ValueError("invalid byte-list payload size")
+                payload = bytes(raw)
+            else:
+                raise ValueError("raw data must be base64, hex, or byte list")
+            if not 1 <= len(payload) <= MAX_RAW_PAYLOAD:
+                raise ValueError("invalid raw payload size")
+            job = getattr(self.hass, "async_add_executor_job", None)
+            if job is None:
+                raise CodecError("executor unavailable")
+            decoded = await job(decode, model, payload)
+            if not isinstance(decoded, dict) or not decoded:
+                raise CodecError("empty decoded payload")
+            # Preserve useful gateway identity metadata, but not raw transport fields.
+            if parsed.get("deviceName"):
+                decoded["deviceName"] = parsed["deviceName"]
+            return decoded
+        except (ValueError, CodecError, OSError, TypeError) as err:
+            _LOGGER.warning("Ignoring invalid raw %s uplink: %s", model, err)
+            return None
 
     async def _async_add_or_update_device(
         self,

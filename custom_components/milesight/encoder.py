@@ -1,165 +1,36 @@
-"""Pure-Python encoder loader for Milesight devices (no JS runtime)."""
+"""Downlink adapter for vendored JavaScript codecs."""
 
 from __future__ import annotations
 
 import base64
-import importlib.util
-import logging
-from pathlib import Path
-from typing import Dict, Optional, Any
-
-_LOGGER = logging.getLogger(__name__)
-
-ENCODER_ROOTS = [
-    Path(__file__).parent / "codecs"
-]
-_ENCODER_CACHE: Dict[Path, Any] = {}
+from .codec_runtime import CodecError, encode
 
 
 class EncodeError(Exception):
     """Raised when payload cannot be encoded."""
 
 
-def encode_payload(model: str, payload: Dict[str, object]) -> bytes:
-    """Encode a downlink payload for a given model using a Python encoder file."""
-    model_key = (model or "").strip().lower()
-    if not model_key:
+def encode_payload(model: str, payload: dict[str, object]) -> dict[str, object]:
+    """Return the Home Assistant downlink envelope."""
+    if not (model or "").strip():
         raise EncodeError("device model is required to encode payload")
-    if not payload:
+    if not isinstance(payload, dict) or not payload:
         raise EncodeError("empty payload")
-
-    encoder_path = _find_encoder_path(model_key)
-    if not encoder_path:
-        raise EncodeError(f"encoder for model {model_key} not found")
-
-    encoder_mod = _load_encoder(encoder_path)
-
-    # Call a shim that tolerates missing optional fields where possible.
+    confirmed = payload.get("confirmed", True)
+    fport = payload.get("fport", 85)
+    if type(confirmed) is not bool:
+        raise EncodeError("confirmed must be a boolean")
+    if type(fport) is not int or not 1 <= fport <= 223:
+        raise EncodeError("fport must be an integer between 1 and 223")
+    command = {key: value for key, value in payload.items() if key not in {"confirmed", "fport"}}
+    if not command:
+        raise EncodeError("empty command")
     try:
-        result = _call_encoder(encoder_mod, payload, encoder_path)
-    except EncodeError:
-        raise
-    except Exception as err:  # pragma: no cover - runtime safety
-        raise EncodeError(f"failed to encode payload: {err}") from err
-
-    return _normalize_downlink(result, encoder_path, payload)
-
-
-def _find_encoder_path(model: str) -> Optional[Path]:
-    """Locate a Python encoder file in codecs|decoders/{model}/..."""
-    filenames = [
-        "encode.py",
-        f"{model}-encode.py",
-        f"{model}-encoder.py",
-        "encoder.py",
-    ]
-    for root in ENCODER_ROOTS:
-        for name in filenames:
-            path = root / model / name
-            if path.exists():
-                return path
-    return None
-
-
-def _load_encoder(path: Path):
-    """Load (and cache) a Python module from the encoder path."""
-    mod = _ENCODER_CACHE.get(path)
-    if mod:
-        return mod
-    spec = importlib.util.spec_from_file_location(path.stem, path)
-    if spec is None or spec.loader is None:
-        raise EncodeError(f"cannot load encoder from {path}")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[assignment]
-    _ENCODER_CACHE[path] = mod
-    return mod
-
-
-def _call_encoder(mod: Any, payload: Dict[str, object], path: Path) -> Any:
-    """Call the encoder, allowing for optional tolerance of missing extras."""
-    if hasattr(mod, "encode"):
-        return mod.encode(payload)
-    if hasattr(mod, "milesightDeviceEncode"):
-        return mod.milesightDeviceEncode(payload)
-    raise EncodeError(f"encoder function not found in {path.name}")
-
-
-def _as_bytes(result: object, path: Path) -> bytes:
-    """Coerce encoder output into bytes."""
-    if result is None:
-        raise EncodeError(f"encoder {path.name} returned nothing")
-    if isinstance(result, bytes):
-        return result
-    if isinstance(result, bytearray):
-        return bytes(result)
-    if isinstance(result, (list, tuple)):
-        try:
-            return bytes(result)
-        except Exception as err:  # pragma: no cover - defensive
-            raise EncodeError(
-                f"encoder {path.name} returned non-byte list: {err}"
-            ) from err
-    raise EncodeError(f"encoder {path.name} returned unsupported type {type(result)}")
-
-
-def _normalize_downlink(
-    result: Any, path: Path, payload: Dict[str, object]
-) -> Dict[str, object]:
-    """Normalize encoder output to {confirmed, fport, data(base64)}."""
-    try:
-        confirmed = bool(payload.get("confirmed", True))
-        fport = int(payload.get("fport", 85))
-
-        if isinstance(result, dict):
-            # Allow encoder to override fport/confirmed and raw data
-            confirmed = bool(result.get("confirmed", confirmed))
-            fport = int(result.get("fport", fport))
-            data_obj = result.get("data") or result.get("bytes")
-            if data_obj is None:
-                raise EncodeError(
-                    f"encoder {path.name} returned dict without data/bytes"
-                )
-            data_bytes = _to_bytes(data_obj, path)
-        else:
-            data_bytes = _to_bytes(result, path)
-        if not data_bytes:
-            raise EncodeError(f"encoder {path.name} returned an empty payload")
-
-        return {
-            "confirmed": confirmed,
-            "fport": fport,
-            "data": base64.b64encode(data_bytes).decode("ascii"),
-        }
-    except EncodeError:
-        raise
-    except Exception as err:
-        raise EncodeError(f"failed to normalize encoder output: {err}") from err
-
-
-def _to_bytes(data: Any, path: Path) -> bytes:
-    """Coerce encoder output data to bytes."""
-    if isinstance(data, bytes):
-        return data
-    if isinstance(data, bytearray):
-        return bytes(data)
-    if isinstance(data, (list, tuple)):
-        try:
-            return bytes(data)
-        except Exception as err:  # pragma: no cover - defensive
-            raise EncodeError(
-                f"encoder {path.name} returned non-byte list: {err}"
-            ) from err
-    if isinstance(data, str):
-        # Assume hex or base64 string
-        try:
-            return bytes.fromhex(data)
-        except Exception:
-            try:
-                return base64.b64decode(data)
-            except Exception:
-                raise EncodeError(
-                    f"encoder {path.name} returned string data not hex/base64"
-                )
-    raise EncodeError(
-        f"encoder {path.name} returned unsupported data type {type(data)}"
-    )
+        data = encode(model, command)
+    except (CodecError, TypeError, ValueError) as err:
+        raise EncodeError(str(err)) from err
+    return {
+        "confirmed": confirmed,
+        "fport": fport,
+        "data": base64.b64encode(data).decode("ascii"),
+    }

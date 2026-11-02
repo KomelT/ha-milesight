@@ -9,6 +9,6 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/KomelT/ha-milesight/issues",
   "loggers": ["custom_components.milesight"],
-  "requirements": [],
-  "version": "0.0.1"
+  "requirements": ["quickjs-ng==0.17.0.2"],
+  "version": "0.1.0"
 }

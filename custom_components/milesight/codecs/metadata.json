@@ -1,0 +1,10 @@
+{
+  "source_repository": "https://github.com/Milesight-IoT/SensorDecoders",
+  "commit": "f83a8a9a1d1f7376a6d952a7bb55d7292a6f143f",
+  "files": {
+    "wt101/wt101-decoder.js": {"url": "https://raw.githubusercontent.com/Milesight-IoT/SensorDecoders/f83a8a9a1d1f7376a6d952a7bb55d7292a6f143f/wt-series/wt101/wt101-decoder.js", "sha256": "059628638ec3a192697cc81b0a510d7102752662e89cdd76225952b91854a538"},
+    "wt101/wt101-encoder.js": {"url": "https://raw.githubusercontent.com/Milesight-IoT/SensorDecoders/f83a8a9a1d1f7376a6d952a7bb55d7292a6f143f/wt-series/wt101/wt101-encoder.js", "sha256": "a54f2d19a54292c5e31132cfc2c13c51894b013135d994c656d426c8e2a8ad74"},
+    "wt101/wt101-codec.json": {"url": "https://raw.githubusercontent.com/Milesight-IoT/SensorDecoders/f83a8a9a1d1f7376a6d952a7bb55d7292a6f143f/wt-series/wt101/wt101-codec.json", "sha256": "7358c0eae07fc2aa85815ba86eece63019a631ef002912b6c841ff6c940da520"},
+    "wt101/wt101.png": {"url": "https://raw.githubusercontent.com/Milesight-IoT/SensorDecoders/f83a8a9a1d1f7376a6d952a7bb55d7292a6f143f/wt-series/wt101/wt101.png", "sha256": "369dd655815a38a7415d3d458c48c34b09142e3ce17fe5f4d6e9f7b66a53a57d"}
+  }
+}

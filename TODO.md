@@ -15,12 +15,12 @@
 
 ## Official Milesight codec/assets plan
 
-- [ ] Decide codec licensing and attribution requirements before vendoring.
-- [ ] Pin an upstream release/commit and record checksums.
-- [ ] Build a WT101 pilot using upstream assets.
-- [ ] Decide on a JavaScript runtime adapter; Js2Py is old and requires isolation/an executor, or use an alternative.
-- [ ] Add a synchronization script for pinned upstream assets.
-- [ ] Add tests against upstream sample payloads.
+- [x] Decide codec licensing and attribution requirements before vendoring.
+- [x] Pin an upstream release/commit and record checksums.
+- [x] Build a WT101 pilot using upstream assets.
+- [x] Decide on a JavaScript runtime adapter; use quickjs-ng with isolation and an executor.
+- [x] Add a synchronization script for pinned upstream assets.
+- [x] Add tests against upstream sample payloads.
 - [ ] Expand to additional models only after the pilot is stable.
 
 The upstream https://github.com/Milesight-IoT/SensorDecoders repository provides

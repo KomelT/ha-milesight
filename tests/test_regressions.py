@@ -1,5 +1,6 @@
 """Small dependency-free regression tests for pure integration behavior."""
 
+import base64
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -12,9 +13,10 @@ from custom_components.milesight.config_flow import (
     _validate_downlink_template,
     _validate_topic_filter,
 )
-from custom_components.milesight.codecs.wt101.encode import setFreezeProtection
 from custom_components.milesight.encoder import EncodeError, encode_payload
+from custom_components.milesight.codec_runtime import CodecError, CodecModelError, decode
 from custom_components.milesight.manager import MilesightDevice, MilesightManager
+from custom_components.milesight.numbers.target_temperature import MilesightTargetTempNumber
 from custom_components.milesight.switches.freeze_protection import _freeze_threshold
 from custom_components.milesight import (
     async_setup_entry,
@@ -25,6 +27,7 @@ from custom_components.milesight.http_view import (
     MilesightDeviceActionView,
     MilesightDevicesView,
 )
+from scripts.sync_codecs import _safe_destination
 
 
 class EncoderTests(unittest.TestCase):
@@ -36,14 +39,59 @@ class EncoderTests(unittest.TestCase):
         with self.assertRaises(EncodeError):
             encode_payload("wt101", {"reboot": 0})
 
-    def test_invalid_fport_is_rejected(self):
+    def test_transport_validation(self):
+        for value in ("85", 0, 224, True, 1.5):
+            with self.assertRaises(EncodeError):
+                encode_payload("wt101", {"reboot": 1, "fport": value})
         with self.assertRaises(EncodeError):
-            encode_payload("wt101", {"reboot": 1, "fport": "not-an-int"})
+            encode_payload("wt101", {"reboot": 1, "confirmed": "true"})
 
-    def test_freeze_threshold_rejects_bool_and_out_of_range(self):
-        for threshold in (True, 0, 6):
-            with self.assertRaises(ValueError):
-                setFreezeProtection({"enable": 1, "temperature": threshold})
+    def test_official_encoder_payloads(self):
+        cases = (
+            ({"reboot": 1}, "ff10ff"),
+            ({"report_status": 1}, "ff2800"),
+            ({"child_lock_config": {"enable": 1}}, "ff2501"),
+            ({"freeze_protection_config": {"enable": 1, "temperature": 3}}, "ffb0011e00"),
+            ({"target_temperature": 20, "temperature_tolerance": 1}, "ffb1140a00"),
+        )
+        for command, expected in cases:
+            result = encode_payload("wt101", command)
+            self.assertEqual(
+                result,
+                {
+                    "confirmed": True,
+                    "fport": 85,
+                    "data": base64.b64encode(bytes.fromhex(expected)).decode(),
+                },
+            )
+
+    def test_custom_transport_envelope(self):
+        self.assertEqual(
+            encode_payload("wt101", {"reboot": 1, "confirmed": False, "fport": 10}),
+            {"confirmed": False, "fport": 10, "data": base64.b64encode(bytes.fromhex("ff10ff")).decode()},
+        )
+
+    def test_freeze_threshold_rejects_bool(self):
+        for threshold in (True, "2"):
+            with self.assertRaises(EncodeError):
+                encode_payload(
+                    "wt101",
+                    {"freeze_protection_config": {"enable": 1, "temperature": threshold}},
+                )
+
+    def test_upstream_sample_decode(self):
+        from custom_components.milesight.codec_runtime import decode
+
+        result = decode(
+            "wt101",
+            bytes.fromhex("01756104672C0103670A01059264099000000B900000"),
+        )
+        self.assertEqual(result["battery"], 97)
+        self.assertEqual(result["temperature"], 26.6)
+        self.assertEqual(result["target_temperature"], 30)
+        self.assertEqual(result["valve_opening"], 100)
+        self.assertEqual(result["motor_stroke"], 0)
+        self.assertEqual(result["motor_position"], 0)
 
     def test_freeze_threshold_uses_configured_value_not_ambient_temperature(self):
         self.assertEqual(
@@ -57,6 +105,14 @@ class EncoderTests(unittest.TestCase):
 
 
 class HelperTests(unittest.TestCase):
+    def test_codec_runtime_rejects_unknown_or_traversal_models(self):
+        for model in ("../wt101", "unknown"):
+            with self.assertRaises((CodecModelError, CodecError)):
+                decode(model, b"\x01\x75\x61")
+    def test_codec_sync_rejects_traversal(self):
+        with self.assertRaises(ValueError):
+            _safe_destination("../outside.js")
+
     def test_topic_validators_reject_embedded_plus(self):
         with self.assertRaises(Exception):
             _validate_topic_filter("milesight/foo+bar/+/uplink")
@@ -94,6 +150,78 @@ class HelperTests(unittest.TestCase):
 
 
 class MqttHandlerTests(unittest.IsolatedAsyncioTestCase):
+    async def test_target_temperature_requires_integer_and_sends_integer(self):
+        services = SimpleNamespace(async_call=AsyncMock())
+        hass = SimpleNamespace(services=services)
+        manager = MilesightManager(hass, "entry", "milesight/+/+/uplink")
+        device = MilesightDevice(
+            "aa",
+            "WT101",
+            telemetry={
+                "temperature_tolerance": 0.5,
+                "target_temperature_range": {"min": 5, "max": 35},
+            },
+        )
+        manager.devices["aa"] = device
+        entity = MilesightTargetTempNumber(manager, device, "entry")
+        entity.hass = hass
+        entity.async_write_ha_state = Mock()
+        self.assertEqual(entity.native_min_value, 5)
+        self.assertEqual(entity.native_max_value, 35)
+        self.assertEqual(entity.native_step, 1)
+        with self.assertRaises(HomeAssistantError):
+            await entity.async_set_native_value(20.5)
+        await entity.async_set_native_value(20)
+        self.assertEqual(services.async_call.await_args.args[2]["payload"], {
+            "target_temperature": 20,
+            "temperature_tolerance": 0.5,
+        })
+
+    async def test_raw_payload_size_limits_skip_executor(self):
+        executor = AsyncMock()
+        manager = MilesightManager(
+            SimpleNamespace(async_add_executor_job=executor),
+            "entry",
+            "milesight/+/+/uplink",
+        )
+        oversized_b64 = {"data": "A" * 341}
+        oversized_list = {"data": [0] * 256}
+        self.assertIsNone(await manager._async_decode_wrapper("WT101", oversized_b64))
+        self.assertIsNone(await manager._async_decode_wrapper("WT101", oversized_list))
+        executor.assert_not_awaited()
+
+    async def test_oversized_mqtt_body_skips_json_parse(self):
+        manager = MilesightManager(None, "entry", "milesight/+/+/uplink")
+        with patch("custom_components.milesight.manager.json.loads") as loads:
+            await manager.async_handle_join_uplink(
+                SimpleNamespace(topic="milesight/WT101/AA/uplink", payload="x" * 65537)
+            )
+        loads.assert_not_called()
+
+    async def test_raw_wrapper_formats_use_executor(self):
+        async def executor(function, *args):
+            return function(*args)
+
+        hass = SimpleNamespace(async_add_executor_job=executor)
+        manager = MilesightManager(hass, "entry", "milesight/+/+/uplink")
+        sample = "AXVhBGcsAQNnCgEFkmQJkAAAC5AAAA=="
+        wrappers = [
+            {"data": sample},
+            {"data": "01756104672c0103670a01059264099000000b900000", "encoding": "hex"},
+            {"bytes": list(bytes.fromhex("01756104672c0103670a01059264099000000b900000"))},
+        ]
+        for wrapper in wrappers:
+            result = await manager._async_decode_wrapper("WT101", wrapper)
+            self.assertEqual(result["temperature"], 26.6)
+        ambiguous = await manager._async_decode_wrapper("WT101", {"data": "deadbeef"})
+        self.assertIsNone(ambiguous)
+
+    async def test_invalid_raw_wrapper_is_ignored(self):
+        hass = SimpleNamespace(async_add_executor_job=AsyncMock())
+        manager = MilesightManager(hass, "entry", "milesight/+/+/uplink")
+        self.assertIsNone(await manager._async_decode_wrapper("WT101", {"data": "%%%"}))
+        self.assertIsNone(await manager._async_decode_wrapper("WT101", {"data": [], "encoding": "wat"}))
+
     async def test_decoded_object_adds_and_updates_device(self):
         manager = MilesightManager(None, "entry", "milesight/+/+/uplink")
         message = SimpleNamespace(

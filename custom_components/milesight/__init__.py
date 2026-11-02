@@ -133,16 +133,10 @@ def _register_services(
         payload: dict = call.data.get("payload") or {}
         topic = _build_downlink_topic(topic_template, model, dev_eui)
         try:
-            encoded = encode_payload(model, payload)
+            encoded = await hass.async_add_executor_job(encode_payload, model, payload)
         except EncodeError as err:
             raise ServiceValidationError(f"Encode failed: {err}") from err
-        # If encoder returns a normalized downlink dict, publish as JSON; else hex.
-        if isinstance(encoded, dict):
-            message = json.dumps(encoded)
-        elif isinstance(encoded, (bytes, bytearray, list, tuple)):
-            message = bytes(encoded).hex()
-        else:
-            raise ServiceValidationError(f"Unsupported encoded payload type: {type(encoded)}")
+        message = json.dumps(encoded)
         await mqtt.async_publish(hass, topic, message)
 
     hass.services.async_register(
