@@ -11,6 +11,7 @@ Custom integration that listens to MQTT join/uplink topics, auto-discovers Miles
 - Uplink payloads are accepted as already-decoded JSON objects or WT101 raw gateway data
 - Dynamic device/entity creation based on the model (WT101 included)
 - No built-in panel; use HA entities/services directly
+- WT101 devices expose their vendored product photograph as a native Home Assistant image entity
 
 ## Prerequisites (required before installing Milesight)
 1. Install the **Mosquitto broker** add-on in Home Assistant.
@@ -43,7 +44,7 @@ After installing the integration, configure MQTT on your Milesight gateway:
 The integration includes pinned, official Milesight WT101 GPL-3.0 decoder and
 encoder code locally. A gateway may publish decoded JSON or its normal wrapper
 with `data` as base64 (hex and byte-list forms are also accepted for WT101).
-There is no runtime GitHub access. The vendored PNG is not currently displayed.
+There is no runtime GitHub access. WT101's vendored PNG is exposed as a native Home Assistant image entity.
 
 To verify pinned assets, run `python scripts/sync_codecs.py`; it is verify-only
 by default. `--update` only re-downloads the exact metadata URLs and accepts

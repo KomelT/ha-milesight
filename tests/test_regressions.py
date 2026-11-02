@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.components.http import KEY_HASS
+from homeassistant.const import Platform
 
 from custom_components.milesight.binary_sensor import MilesightBinarySensor
 from custom_components.milesight.config_flow import (
@@ -15,6 +16,8 @@ from custom_components.milesight.config_flow import (
 )
 from custom_components.milesight.encoder import EncodeError, encode_payload
 from custom_components.milesight.codec_runtime import CodecError, CodecModelError, decode
+from custom_components.milesight.codec_runtime import load_image_asset
+from custom_components.milesight.image import MilesightProductImage, async_setup_entry as async_setup_image
 from custom_components.milesight.manager import MilesightDevice, MilesightManager
 from custom_components.milesight.numbers.target_temperature import MilesightTargetTempNumber
 from custom_components.milesight.switches.freeze_protection import _freeze_threshold
@@ -22,7 +25,7 @@ from custom_components.milesight import (
     async_setup_entry,
     async_unload_entry,
 )
-from custom_components.milesight.const import DOMAIN
+from custom_components.milesight.const import DOMAIN, PLATFORMS
 from custom_components.milesight.http_view import (
     MilesightDeviceActionView,
     MilesightDevicesView,
@@ -105,6 +108,13 @@ class EncoderTests(unittest.TestCase):
 
 
 class HelperTests(unittest.TestCase):
+    def test_wt101_image_asset_is_a_png_and_unknown_models_are_rejected(self):
+        image = load_image_asset("WT101")
+        self.assertTrue(image.startswith(b"\x89PNG\r\n\x1a\n"))
+        for model in ("unknown", "../wt101"):
+            with self.assertRaises((CodecModelError, CodecError)):
+                load_image_asset(model)
+
     def test_codec_runtime_rejects_unknown_or_traversal_models(self):
         for model in ("../wt101", "unknown"):
             with self.assertRaises((CodecModelError, CodecError)):
@@ -176,6 +186,7 @@ class MqttHandlerTests(unittest.IsolatedAsyncioTestCase):
             "target_temperature": 20,
             "temperature_tolerance": 0.5,
         })
+
 
     async def test_raw_payload_size_limits_skip_executor(self):
         executor = AsyncMock()
@@ -271,6 +282,83 @@ class MqttHandlerTests(unittest.IsolatedAsyncioTestCase):
                     topic_filter=manager.join_topic,
                 )
         self.assertIn("aa", manager.devices)
+
+
+class ImagePlatformTests(unittest.IsolatedAsyncioTestCase):
+    async def test_wt101_image_entity_uses_device_and_cached_bytes(self):
+        device = MilesightDevice("AA", "WT101")
+        image = b"\x89PNG\r\n\x1a\nimage"
+        timestamp = SimpleNamespace()
+        entity = object.__new__(MilesightProductImage)
+        with patch("custom_components.milesight.image.ImageEntity.__init__", return_value=None):
+            MilesightProductImage.__init__(entity, SimpleNamespace(), device, image, timestamp)
+        self.assertEqual(entity.unique_id, "aa_product_image")
+        self.assertEqual(entity.content_type, "image/png")
+        self.assertTrue(entity.has_entity_name)
+        self.assertEqual(entity.name, "Product image")
+        self.assertEqual(entity.image(), image)
+        self.assertIs(entity.image_last_updated, timestamp)
+        self.assertEqual(entity.device_info["identifiers"], {(DOMAIN, "aa")})
+
+    async def test_setup_adds_existing_and_new_wt101_with_cached_image_and_timestamp(self):
+        async def executor(function, *args):
+            return function(*args)
+
+        manager = MilesightManager(None, "entry", "uplink/+/+")
+        manager.devices["aa"] = MilesightDevice("aa", "WT101")
+        hass = SimpleNamespace(
+            data={DOMAIN: {"entry": manager}}, async_add_executor_job=executor
+        )
+        entry = SimpleNamespace(entry_id="entry", async_on_unload=Mock())
+        added = []
+        unsubscribe = Mock()
+        new_device_callback = None
+
+        def capture_dispatcher(_hass, _signal, callback):
+            nonlocal new_device_callback
+            new_device_callback = callback
+            return unsubscribe
+
+        timestamp = SimpleNamespace()
+        with patch("custom_components.milesight.image.dt_util.utcnow", return_value=timestamp):
+            with patch(
+                "custom_components.milesight.image.async_dispatcher_connect",
+                side_effect=capture_dispatcher,
+            ):
+                with patch(
+                    "custom_components.milesight.image.ImageEntity.__init__",
+                    return_value=None,
+                ):
+                    await async_setup_image(hass, entry, added.extend)
+
+        self.assertEqual(len(added), 1)
+        manager.devices["bb"] = MilesightDevice("bb", "WT101")
+        with patch(
+            "custom_components.milesight.image.ImageEntity.__init__", return_value=None
+        ):
+            new_device_callback("bb")
+        self.assertEqual(len(added), 2)
+        self.assertIs(added[0].image(), added[1].image())
+        self.assertIs(added[0].image_last_updated, timestamp)
+        self.assertIs(added[1].image_last_updated, timestamp)
+        entry.async_on_unload.assert_called_once_with(unsubscribe)
+
+    def test_image_platform_is_registered(self):
+        self.assertIn(Platform.IMAGE, PLATFORMS)
+
+    async def test_unknown_model_is_skipped(self):
+        async def executor(function, *args):
+            return function(*args)
+
+        manager = MilesightManager(None, "entry", "uplink/+/+")
+        manager.devices["aa"] = MilesightDevice("aa", "UNKNOWN")
+        hass = SimpleNamespace(
+            data={DOMAIN: {"entry": manager}}, async_add_executor_job=executor
+        )
+        entry = SimpleNamespace(entry_id="entry", async_on_unload=Mock())
+        add_entities = Mock()
+        await async_setup_image(hass, entry, add_entities)
+        add_entities.assert_not_called()
 
 
 class LifecycleTests(unittest.IsolatedAsyncioTestCase):

@@ -10,7 +10,9 @@ from typing import Any
 import quickjs
 
 CODEC_ROOT = Path(__file__).parent / "codecs"
-MODEL_ASSETS = {"wt101": ("wt101-decoder.js", "wt101-encoder.js")}
+MODEL_ASSETS = {
+    "wt101": ("wt101-decoder.js", "wt101-encoder.js", "wt101.png"),
+}
 
 
 class CodecError(Exception):
@@ -38,14 +40,26 @@ def _model_dir(model: str) -> tuple[str, Path]:
 def _asset_path(model: str, asset: str) -> Path:
     model_key, model_dir = _model_dir(model)
     filenames = MODEL_ASSETS[model_key]
-    if asset not in {"decoder", "encoder"}:
+    if asset not in {"decoder", "encoder", "image"}:
         raise CodecError(f"unknown codec asset: {asset}")
-    filename = filenames[0 if asset == "decoder" else 1]
+    filename = filenames[{"decoder": 0, "encoder": 1, "image": 2}[asset]]
     root = CODEC_ROOT.resolve()
     path = (model_dir / filename).resolve()
     if root not in path.parents or model_dir not in path.parents:
         raise CodecModelError(f"invalid codec asset path: {filename}")
     return path
+
+
+def load_image_asset(model: str) -> bytes:
+    """Load a controlled local product image and validate its PNG signature."""
+    path = _asset_path(model, "image")
+    try:
+        content = path.read_bytes()
+    except (OSError, UnicodeError) as err:
+        raise CodecError(f"cannot read image asset {path.name}") from err
+    if not content.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise CodecError(f"image asset is not a PNG: {path.name}")
+    return content
 
 
 @lru_cache(maxsize=8)

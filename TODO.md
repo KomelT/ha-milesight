@@ -28,10 +28,10 @@ The upstream https://github.com/Milesight-IoT/SensorDecoders repository provides
 licensed GPL-3.0. Prefer vendoring a pinned release/commit without runtime
 GitHub access.
 
-## Web UI and photographs
+## Native product images
 
-- [ ] Decide between a custom panel/card UI and `entity_picture`; the standard HA device page has no generic product-photo field.
-- [ ] Vendor images locally with attribution; do not hotlink them.
+- [x] Expose vendored WT101 photography as a native read-only Home Assistant image entity.
+- [x] Vendor images locally with attribution; do not hotlink them.
 
 ## Release readiness
 
