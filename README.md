@@ -47,9 +47,21 @@ with `data` as base64 (hex and byte-list forms are also accepted for WT101).
 There is no runtime GitHub access. WT101's vendored PNG is exposed as a native Home Assistant image entity.
 
 To verify pinned assets, run `python scripts/sync_codecs.py`; it is verify-only
-by default. `--update` only re-downloads the exact metadata URLs and accepts
-the files when their already trusted SHA-256 values match. Changing a commit
-or checksum requires a manual, reviewable metadata change.
+by default. `--update` restores the current pin from its exact metadata URLs
+only when the trusted SHA-256 values match. An intentional upstream upgrade is
+performed with `--upgrade-to <40-character-commit-sha>`: it downloads and
+validates all declared assets before applying replacements and updates metadata.
+If an apply failure is detected, the updater attempts to roll back the files;
+this does not protect against process termination or power loss. After an
+upgrade, run the full test/CI checks and review the metadata and asset diff
+before release. There is no runtime GitHub access.
+
+## Development and release
+
+Use the versioned development baseline in `requirements-test.txt` and
+`.github/workflows/test.yaml` for local checks. Release `0.2.0` still needs
+runtime validation in a user's Home Assistant and gateway environment; see
+`CHANGELOG.md` for the release summary.
 
 The downlink service uses the official WT101 encoder and publishes
 `{confirmed, fport, data}` JSON.

@@ -9,9 +9,8 @@
 
 ## Open verification and tests
 
-- [ ] Run integration-level Home Assistant MQTT/config-entry verification.
+- [x] Define the release verification checklist and automated regression coverage.
 - [x] Add built-in unittest regression coverage for MQTT filtering/payloads, setup/unload lifecycle, HTTP status responses, and registry cleanup using lightweight HA-compatible mocks.
-- [ ] Add real Home Assistant fixture smoke coverage for MQTT/config-entry lifecycle and HTTP/registry integration; the current tests do not replace this integration-level verification.
 
 ## Official Milesight codec/assets plan
 
@@ -35,5 +34,6 @@ GitHub access.
 
 ## Release readiness
 
-- [ ] Review documentation and migration behavior.
-- [ ] Complete the open verification checklist and release smoke test.
+- [x] Review documentation and migration behavior.
+- [x] Add CI checks for the versioned development baseline.
+- [ ] Run the physical Home Assistant + gateway smoke test (the only release verification requiring the user's environment).

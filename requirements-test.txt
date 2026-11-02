@@ -1,0 +1,3 @@
+homeassistant==2025.12.2
+quickjs-ng==0.17.0.2
+ruff==0.14.8
