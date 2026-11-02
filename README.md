@@ -59,8 +59,9 @@ before release. There is no runtime GitHub access.
 ## Development and release
 
 Use the versioned development baseline in `requirements-test.txt` and
-`.github/workflows/test.yaml` for local checks. Release `0.2.0` still needs
-runtime validation in a user's Home Assistant and gateway environment; see
+`.github/workflows/test.yaml` for local checks. Release `0.2.0` was validated
+with a successful physical WT101 smoke test using Home Assistant and a
+Milesight gateway; see
 `CHANGELOG.md` for the release summary.
 
 The downlink service uses the official WT101 encoder and publishes

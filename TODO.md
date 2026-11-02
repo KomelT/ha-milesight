@@ -36,4 +36,4 @@ GitHub access.
 
 - [x] Review documentation and migration behavior.
 - [x] Add CI checks for the versioned development baseline.
-- [ ] Run the physical Home Assistant + gateway smoke test (the only release verification requiring the user's environment).
+- [x] Run the physical Home Assistant + gateway smoke test (the only release verification requiring the user's environment).

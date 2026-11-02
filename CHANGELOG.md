@@ -10,6 +10,7 @@
 - Added official WT101 codecs, raw gateway decoding, and downlink encoding.
 - Added a native Home Assistant product image entity.
 - Added regression tests, codec synchronization checks, and licensing notices.
+- Confirmed the release with a physical Home Assistant + WT101 gateway smoke test.
 - Added a codec updater with all-download/validation-before-apply behavior and
   rollback attempts for detected apply failures; process termination or power
   loss is outside that guarantee.
