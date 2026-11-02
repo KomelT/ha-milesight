@@ -13,6 +13,23 @@ from ..const import DOMAIN, SIGNAL_DEVICE_UPDATED
 from ..manager import MilesightManager, MilesightDevice
 
 _FREEZE_PROTECTION_KEY = "freeze_protection_config.enable"
+_FREEZE_THRESHOLD_KEY = "freeze_protection_config.temperature"
+_DEFAULT_FREEZE_THRESHOLD = 3
+
+
+def _freeze_threshold(telemetry: dict[str, object]) -> int | float:
+    """Return the configured freeze threshold or the documented default."""
+    config = telemetry.get("freeze_protection_config")
+    threshold = config.get("temperature") if isinstance(config, dict) else None
+    if threshold is None:
+        threshold = telemetry.get(_FREEZE_THRESHOLD_KEY)
+    if (
+        isinstance(threshold, bool)
+        or not isinstance(threshold, (int, float))
+        or not 1 <= threshold <= 5
+    ):
+        return _DEFAULT_FREEZE_THRESHOLD
+    return threshold
 
 
 class MilesightFreezeProtectionSwitch(SwitchEntity):
@@ -78,7 +95,11 @@ class MilesightFreezeProtectionSwitch(SwitchEntity):
         dev = self._manager.get_device(self._dev_eui)
         if not dev:
             return
-        payload = {"freeze_protection_config": {"enable": 1 if enabled else 0}}
+        temperature = _freeze_threshold(dev.telemetry) if enabled else 0
+        payload = {"freeze_protection_config": {
+            "enable": 1 if enabled else 0,
+            "temperature": temperature,
+        }}
         await self.hass.services.async_call(
             DOMAIN,
             "send_command",

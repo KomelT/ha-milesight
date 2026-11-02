@@ -93,8 +93,19 @@ class MilesightBinarySensor(BinarySensorEntity):
         if value is None:
             return False
         if isinstance(value, str):
-            value_norm = value.lower()
-        else:
-            value_norm = value
-
-        return bool(value_norm)
+            return value.strip().lower() in {
+                "1",
+                "true",
+                "on",
+                "yes",
+                "enabled",
+                "enable",
+                "open",
+                "uninstalled",
+                "triggered",
+            }
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return value != 0
+        return False

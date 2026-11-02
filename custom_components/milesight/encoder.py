@@ -78,10 +78,7 @@ def _load_encoder(path: Path):
 def _call_encoder(mod: Any, payload: Dict[str, object], path: Path) -> Any:
     """Call the encoder, allowing for optional tolerance of missing extras."""
     if hasattr(mod, "encode"):
-        try:
-            return mod.encode(payload)
-        except Exception as err:
-            raise
+        return mod.encode(payload)
     if hasattr(mod, "milesightDeviceEncode"):
         return mod.milesightDeviceEncode(payload)
     raise EncodeError(f"encoder function not found in {path.name}")
@@ -109,25 +106,34 @@ def _normalize_downlink(
     result: Any, path: Path, payload: Dict[str, object]
 ) -> Dict[str, object]:
     """Normalize encoder output to {confirmed, fport, data(base64)}."""
-    confirmed = bool(payload.get("confirmed", True))
-    fport = int(payload.get("fport", 85))
+    try:
+        confirmed = bool(payload.get("confirmed", True))
+        fport = int(payload.get("fport", 85))
 
-    if isinstance(result, dict):
-        # Allow encoder to override fport/confirmed and raw data
-        confirmed = bool(result.get("confirmed", confirmed))
-        fport = int(result.get("fport", fport))
-        data_obj = result.get("data") or result.get("bytes")
-        if data_obj is None:
-            raise EncodeError(f"encoder {path.name} returned dict without data/bytes")
-        data_bytes = _to_bytes(data_obj, path)
-    else:
-        data_bytes = _to_bytes(result, path)
+        if isinstance(result, dict):
+            # Allow encoder to override fport/confirmed and raw data
+            confirmed = bool(result.get("confirmed", confirmed))
+            fport = int(result.get("fport", fport))
+            data_obj = result.get("data") or result.get("bytes")
+            if data_obj is None:
+                raise EncodeError(
+                    f"encoder {path.name} returned dict without data/bytes"
+                )
+            data_bytes = _to_bytes(data_obj, path)
+        else:
+            data_bytes = _to_bytes(result, path)
+        if not data_bytes:
+            raise EncodeError(f"encoder {path.name} returned an empty payload")
 
-    return {
-        "confirmed": confirmed,
-        "fport": fport,
-        "data": base64.b64encode(data_bytes).decode("ascii"),
-    }
+        return {
+            "confirmed": confirmed,
+            "fport": fport,
+            "data": base64.b64encode(data_bytes).decode("ascii"),
+        }
+    except EncodeError:
+        raise
+    except Exception as err:
+        raise EncodeError(f"failed to normalize encoder output: {err}") from err
 
 
 def _to_bytes(data: Any, path: Path) -> bytes:

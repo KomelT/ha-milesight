@@ -18,6 +18,33 @@ from .const import (
 )
 
 
+def _validate_topic_filter(value: str) -> str:
+    """Validate a topic filter with model and DevEUI wildcards."""
+    parts = value.split("/")
+    if "#" in value or any("+" in part and part != "+" for part in parts):
+        raise vol.Invalid("topic wildcards must be standalone '+' segments")
+    if parts.count("+") != 2:
+        raise vol.Invalid("topic must contain exactly two '+' wildcards and no '#'")
+    if any(not part for part in parts):
+        raise vol.Invalid("topic must not contain empty segments")
+    return value
+
+
+def _validate_downlink_template(value: str) -> str:
+    parts = value.split("/")
+    if "#" in value or any(not part for part in parts):
+        raise vol.Invalid("downlink topic must not contain '#' or empty segments")
+    if any("+" in part and part != "+" for part in parts):
+        raise vol.Invalid("topic wildcards must be standalone '+' segments")
+    if "{" in value and "}" in value:
+        if not {"{model}", "{dev_eui}"} <= set(value.replace("/", " ").split()):
+            raise vol.Invalid("downlink topic must contain model and DevEUI placeholders")
+        return value
+    if parts.count("+") != 2:
+        raise vol.Invalid("downlink topic must not contain '#'")
+    return value
+
+
 def _schema(user_input: dict | None = None) -> vol.Schema:
     defaults = user_input or {}
     return vol.Schema(
@@ -26,15 +53,15 @@ def _schema(user_input: dict | None = None) -> vol.Schema:
             vol.Required(
                 CONF_JOIN_TOPIC,
                 default=defaults.get(CONF_JOIN_TOPIC, DEFAULT_JOIN_TOPIC),
-            ): str,
+            ): vol.All(str, _validate_topic_filter),
             vol.Required(
                 CONF_UPLINK_TOPIC,
                 default=defaults.get(CONF_UPLINK_TOPIC, DEFAULT_UPLINK_TOPIC),
-            ): str,
+            ): vol.All(str, _validate_topic_filter),
             vol.Optional(
                 CONF_DOWNLINK_TOPIC,
                 default=defaults.get(CONF_DOWNLINK_TOPIC, DEFAULT_DOWNLINK_TOPIC),
-            ): str,
+            ): vol.All(str, _validate_downlink_template),
         }
     )
 
@@ -44,18 +71,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @staticmethod
+    def async_get_options_flow(entry: config_entries.ConfigEntry):
+        return OptionsFlowHandler(entry)
+
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input is not None:
+            if self._async_current_entries():
+                return self.async_abort(reason="single_instance_allowed")
             return self.async_create_entry(title=user_input[CONF_NAME], data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=_schema(), errors={})
-
-
-async def async_get_options_flow(
-    entry: config_entries.ConfigEntry,
-) -> config_entries.OptionsFlow:
-    return OptionsFlowHandler(entry)
-
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for the integration."""

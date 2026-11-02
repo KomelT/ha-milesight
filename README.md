@@ -8,7 +8,7 @@ Custom integration that listens to MQTT join/uplink topics, auto-discovers Miles
 
 ## Features
 - Configurable MQTT topics for join/uplink/downlink (via config flow)
-- Uplink payload decoding using official Milesight JS decoders (via `js2py`)
+- Uplink payloads are accepted as already-decoded JSON objects from the gateway
 - Dynamic device/entity creation based on the model (WT101 included)
 - No built-in panel; use HA entities/services directly
 
@@ -39,6 +39,10 @@ After installing the integration, configure MQTT on your Milesight gateway:
    - Downlink topic: `milesight/{model}/{dev_eui}/downlink`
 6. Save/apply and restart MQTT service on the gateway (if required).
 7. Trigger one device uplink and verify entities appear in Home Assistant.
+
+The gateway must publish a decoded JSON object on the uplink topic. Its keys must
+be the model's telemetry keys (for example `temperature` for WT101); this
+integration does not run a JavaScript or raw LoRaWAN decoder.
 
 ## Disclaimer
 This project is an independent, community-driven repository and is not affiliated with, endorsed by, or in any way officially connected with Milesight Technology Co., Ltd. All product names, logos, and brands are property of their respective owners.

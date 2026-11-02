@@ -148,6 +148,9 @@ def milesightDeviceEncode(payload: dict) -> list[int]:
     if "change_report_enable" in payload:
         encoded += setChangeReportEnable(payload["change_report_enable"])
 
+    if not encoded:
+        raise ValueError("no recognized downlink command")
+
     return encoded
 
 
@@ -399,7 +402,7 @@ def setValveControlAlgorithm(valve_control_algorithm: int):
 
 def setFreezeProtection(freeze_protection_config: dict):
     enable = freeze_protection_config.get("enable")
-    temperature = freeze_protection_config.get("temperature")
+    temperature = freeze_protection_config.get("temperature", 0)
 
     enable_map = {0: "disable", 1: "enable"}
     enable_values = getValues(enable_map)
@@ -407,14 +410,18 @@ def setFreezeProtection(freeze_protection_config: dict):
         raise ValueError(
             f"freeze_protection_config.enable must be one of {enable_values}"
         )
-    if enable and not isinstance(temperature, (int, float)):
-        raise ValueError("freeze_protection_config.temperature must be a number")
+    if enable and (
+        isinstance(temperature, bool)
+        or not isinstance(temperature, (int, float))
+        or not 1 <= temperature <= 5
+    ):
+        raise ValueError("freeze_protection_config.temperature must be between 1 and 5 C")
 
     buf = Buffer(5)
     buf.writeUInt8(0xFF)
     buf.writeUInt8(0xB0)
     buf.writeUInt8(getValue(enable_map, enable))
-    buf.writeInt16LE(int(temperature * 10 if temperature is not None else 0))
+    buf.writeInt16LE(int(temperature * 10 if enable else 0))
     return buf.toBytes()
 
 
